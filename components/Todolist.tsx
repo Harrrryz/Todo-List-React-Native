@@ -1,9 +1,7 @@
-// src/components/RecentTodoList.tsx
-
+import { Link } from 'expo-router';
 import React from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, TouchableWithoutFeedback, View } from 'react-native';
 import { Todo } from '../app/types';
-
 
 // Sample data to display in the list
 const DUMMY_TODOS: Todo[] = [
@@ -19,16 +17,23 @@ interface TodoItemProps {
 }
 
 const TodoItem: React.FC<TodoItemProps> = ({ item }) => (
-  <View style={styles.itemContainer}>
-    <View style={styles.itemTextContainer}>
-      <Text style={[styles.itemTitle, item.isCompleted && styles.completedText]}>
-        {item.title}
-      </Text>
-      <Text style={[styles.itemDueDate, item.isCompleted && styles.completedText]}>
-        {item.dueDate}
-      </Text>
+  <TouchableWithoutFeedback>
+    <View style={styles.itemContainer}>
+      <View style={styles.itemTextContainer}>
+        <Text style={[styles.itemTitle, item.isCompleted && styles.completedText]}>
+          {item.title}
+        </Text>
+        <Link href={{
+          pathname: '/todo/[id]',
+          params: { id: item.id }
+        }}>
+          <Text style={[styles.itemDueDate, item.isCompleted && styles.completedText]}>
+            {item.dueDate}
+          </Text>
+        </Link>
+      </View>
     </View>
-  </View>
+  </TouchableWithoutFeedback>
 );
 
 
