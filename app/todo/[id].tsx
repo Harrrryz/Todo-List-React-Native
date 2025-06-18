@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
 
-import { Todo } from '@/app/types';
+import { Todo } from '@/types';
 
 const TodoDetailScreen = () => {
 

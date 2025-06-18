@@ -1,9 +1,9 @@
 // src/screens/CalendarScreen.tsx
 
+import { Todo } from '@/types';
 import React, { useMemo, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { Calendar, DateData } from 'react-native-calendars';
-import { Todo } from '../types';
 
 // Helper to get today's date in 'YYYY-MM-DD' format
 const getTodayDateString = () => new Date().toISOString().split('T')[0];

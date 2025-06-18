@@ -12,7 +12,11 @@ export default function Authorization() {
       username: email,
       password: password,
     }
-    signIn(AccountLoginData);
+    try {
+      signIn(AccountLoginData);
+    } catch (error) {
+      console.error('Login failed:', error);
+    }
   };
 
   return (

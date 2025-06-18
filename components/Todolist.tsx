@@ -1,7 +1,7 @@
+import { Todo } from '@/types';
 import { Link } from 'expo-router';
 import React from 'react';
 import { FlatList, StyleSheet, Text, TouchableWithoutFeedback, View } from 'react-native';
-import { Todo } from '../app/types';
 
 // Sample data to display in the list
 const DUMMY_TODOS: Todo[] = [

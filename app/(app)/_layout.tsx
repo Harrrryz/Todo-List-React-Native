@@ -1,13 +1,16 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Redirect, Stack } from 'expo-router';
+import { Text } from 'react-native';
 import 'react-native-reanimated';
 
+import { useSession } from '@/components/ctx';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { StatusBar } from 'expo-status-bar';
 
-export default function RootLayout() {
+export default function AppLayout() {
   const colorScheme = useColorScheme();
+  const { session, isLoading } = useSession();
   const [loaded] = useFonts({
     SpaceMono: require('../../assets/fonts/SpaceMono-Regular.ttf'),
   });
@@ -16,6 +19,13 @@ export default function RootLayout() {
     return null;
   }
 
+  if (isLoading) {
+    return <Text>Loading...</Text>;
+  }
+
+  if (!session) {
+    return <Redirect href="/sign-in" />;
+  }
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>

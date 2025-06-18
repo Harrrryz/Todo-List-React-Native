@@ -34,27 +34,19 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="calendar"
+        name="Calendar"
         options={{
           title: 'Calendar',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
         }}
       />
       <Tabs.Screen
-        name="account"
+        name="Account"
         options={{
           title: 'Account',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="info.circle" color={color} />,
         }}
       />
-      <Tabs.Screen
-        name="authorization"
-        options={{
-          title: 'Authorization',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="info.circle" color={color} />,
-        }}
-      />
     </Tabs>
-
   );
 }
