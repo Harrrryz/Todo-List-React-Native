@@ -1,6 +1,6 @@
 // src/screens/CalendarScreen.tsx
 
-import { Todo } from '@/types';
+import { TodoModel } from '@/client';
 import React, { useMemo, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { Calendar, DateData } from 'react-native-calendars';
@@ -8,38 +8,29 @@ import { Calendar, DateData } from 'react-native-calendars';
 // Helper to get today's date in 'YYYY-MM-DD' format
 const getTodayDateString = () => new Date().toISOString().split('T')[0];
 
-// Sample data with 'YYYY-MM-DD' due dates
-const DUMMY_TODOS: Todo[] = [
-  { id: '1', title: 'Buy groceries for the week', dueDate: '2024-05-15', isCompleted: false },
-  { id: '2', title: 'Finish React Native report', dueDate: '2024-05-16', isCompleted: false },
-  { id: '3', title: 'Call the dentist', dueDate: '2024-05-16', isCompleted: true },
-  { id: '4', title: 'Plan weekend trip', dueDate: '2024-05-25', isCompleted: false },
-  { id: '5', title: 'Water the plants', dueDate: getTodayDateString(), isCompleted: true },
-  { id: '6', title: 'Submit project proposal', dueDate: getTodayDateString(), isCompleted: false },
-];
 
 // A reusable TodoItem component, slightly adapted for this context
-const TodoItem: React.FC<{ item: Todo }> = ({ item }) => (
+const TodoItem: React.FC<{ item: TodoModel }> = ({ item }) => (
   <View style={styles.itemContainer}>
 
     <View style={styles.itemTextContainer}>
-      <Text style={[styles.itemTitle, item.isCompleted && styles.completedText]}>
-        {item.title}
+      <Text style={[styles.itemTitle, styles.completedText]}>
+        {item.item}
       </Text>
     </View>
   </View>
 );
 
 
-const CalendarScreen = () => {
+const CalendarScreen = (items: TodoModel[]) => {
   const [selectedDate, setSelectedDate] = useState<string>(getTodayDateString());
 
   // Memoize the marked dates to prevent recalculation on every render
   const markedDates = useMemo(() => {
     const marks: { [key: string]: any } = {};
 
-    DUMMY_TODOS.forEach(todo => {
-      marks[todo.dueDate] = { marked: true, dotColor: '#5092D8' };
+    items.forEach(todo => {
+      marks[todo.created_time] = { marked: true, dotColor: '#5092D8' };
     });
 
     // Add selected date styling
@@ -51,12 +42,12 @@ const CalendarScreen = () => {
     };
 
     return marks;
-  }, [DUMMY_TODOS, selectedDate]);
+  }, [items, selectedDate]);
 
   // Memoize the filtered list of todos for the selected date
   const todosForSelectedDate = useMemo(() => {
-    return DUMMY_TODOS.filter(todo => todo.dueDate === selectedDate);
-  }, [DUMMY_TODOS, selectedDate]);
+    return items.filter(todo => todo.created_time === selectedDate);
+  }, [items, selectedDate]);
 
   const onDayPress = (day: DateData) => {
     setSelectedDate(day.dateString);

@@ -18,7 +18,6 @@ export default function AppLayout() {
   if (!loaded) {
     return null;
   }
-
   if (isLoading) {
     return <Text>Loading...</Text>;
   }
@@ -33,6 +32,12 @@ export default function AppLayout() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />
       </Stack>
+      <Stack.Screen
+        name="sign-in"
+        options={{
+          presentation: 'modal',
+        }}
+      />
       <StatusBar style="auto" />
     </ThemeProvider>
   );
