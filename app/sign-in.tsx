@@ -1,10 +1,12 @@
-import { useSession } from '@/components/ctx';
+import { NormalAuthError, useSession } from '@/components/ctx';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function Authorization() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const { signIn } = useSession();
 
   const handleLogin = async () => {
@@ -13,9 +15,15 @@ export default function Authorization() {
       password: password,
     }
     try {
-      signIn(AccountLoginData);
+      await signIn(AccountLoginData);
     } catch (error) {
-      console.error('Login failed:', error);
+      if (error instanceof NormalAuthError) {
+        console.error('Login error:', error.message);
+        setError(error.message);
+      } else {
+        console.error('Unexpected error during login:', error);
+        setError('An unexpected error occurred. Please try again later.');
+      }
     }
   };
 
@@ -40,6 +48,12 @@ export default function Authorization() {
       <TouchableOpacity style={styles.button} onPress={handleLogin}>
         <Text style={styles.buttonText}>Sign In</Text>
       </TouchableOpacity>
+      {error && <Alert variant='destructive' className='max-w-xl'>
+        <AlertTitle>Error!</AlertTitle>
+        <AlertDescription>
+          {error}
+        </AlertDescription>
+      </Alert>}
     </View>
   );
 }

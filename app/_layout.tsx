@@ -1,11 +1,11 @@
+import { client } from '@/client/client.gen';
+import { SessionProvider } from '@/components/ctx';
+import "@/global.css";
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Slot } from 'expo-router';
 import 'react-native-reanimated';
-
-import { client } from '@/client/client.gen';
-import { SessionProvider } from '@/components/ctx';
-import { useColorScheme } from '@/hooks/useColorScheme';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
