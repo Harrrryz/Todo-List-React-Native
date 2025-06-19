@@ -1,34 +1,27 @@
+import { listTodos, TodoModel } from '@/client';
 import { Link } from 'expo-router';
-import React from 'react';
-import { FlatList, StyleSheet, Text, TouchableWithoutFeedback, View } from 'react-native';
-import { Todo } from '../app/types';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableWithoutFeedback, View } from 'react-native';
 
-// Sample data to display in the list
-const DUMMY_TODOS: Todo[] = [
-  { id: '1', title: 'Buy groceries for the week', dueDate: 'Due: Tomorrow', isCompleted: false },
-  { id: '2', title: 'Finish React Native report', dueDate: 'Due: In 2 days', isCompleted: false },
-  { id: '3', title: 'Call the dentist', dueDate: 'Due: In 3 days', isCompleted: true },
-  { id: '4', title: 'Plan weekend trip', dueDate: 'Due: This Friday', isCompleted: false },
-  { id: '5', title: 'Water the plants', dueDate: 'Due: Tomorrow', isCompleted: true },
-];
 
-interface TodoItemProps {
-  item: Todo;
-}
 
-const TodoItem: React.FC<TodoItemProps> = ({ item }) => (
+
+/**
+ * Renders a single todo item in the list.
+ */
+const TodoItem: React.FC<{ item: TodoModel }> = ({ item }) => (
   <TouchableWithoutFeedback>
     <View style={styles.itemContainer}>
       <View style={styles.itemTextContainer}>
-        <Text style={[styles.itemTitle, item.isCompleted && styles.completedText]}>
-          {item.title}
+        <Text style={[styles.itemTitle]}>
+          {item.item}
         </Text>
         <Link href={{
           pathname: '/todo/[id]',
           params: { id: item.id }
-        }}>
-          <Text style={[styles.itemDueDate, item.isCompleted && styles.completedText]}>
-            {item.dueDate}
+        }} asChild>
+          <Text style={[styles.itemDueDate]}>
+            {item.created_time}
           </Text>
         </Link>
       </View>
@@ -38,14 +31,61 @@ const TodoItem: React.FC<TodoItemProps> = ({ item }) => (
 
 
 const RecentTodoList = () => {
+  // State hooks must be called inside the component
+  const [todos, setTodos] = useState<TodoModel[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+
+    const fetchAndSetTodos = async () => {
+      try {
+        setIsLoading(true);
+        const result = await listTodos();
+        const items = result.data?.items || [];
+        setTodos(items);
+      } catch (e) {
+        console.error('Failed to fetch todos:', e);
+        setError('Failed to load todos. Please try again later.');
+
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAndSetTodos();
+  }, []);
+
+
+  if (isLoading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text>Loading Todos...</Text>
+      </View>
+    );
+  }
+
+
+  if (error) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.errorText}>{error}</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Recent Todos</Text>
       <FlatList
-        data={DUMMY_TODOS}
+        data={todos} // Use the state variable for data
         renderItem={({ item }) => <TodoItem item={item} />}
         keyExtractor={item => item.id}
         showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>No todos found.</Text>
+        }
       />
     </View>
   );
@@ -53,9 +93,14 @@ const RecentTodoList = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1, // Takes up remaining vertical space
+    flex: 1,
     paddingHorizontal: 20,
     paddingTop: 10,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   title: {
     fontSize: 22,
@@ -76,9 +121,6 @@ const styles = StyleSheet.create({
     shadowRadius: 1.41,
     elevation: 2,
   },
-  itemIcon: {
-    marginRight: 15,
-  },
   itemTextContainer: {
     flex: 1,
   },
@@ -88,13 +130,22 @@ const styles = StyleSheet.create({
   },
   itemDueDate: {
     fontSize: 12,
-    color: '#777',
+    color: '#007AFF', // Making links look more like links
     marginTop: 4,
   },
   completedText: {
     textDecorationLine: 'line-through',
     color: '#A0A0A0',
   },
+  errorText: {
+    color: 'red',
+    fontSize: 16,
+  },
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 20,
+    color: '#777',
+  }
 });
 
 export default RecentTodoList;

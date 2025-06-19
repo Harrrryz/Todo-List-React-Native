@@ -1,19 +1,26 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Redirect, Stack } from 'expo-router';
 import 'react-native-reanimated';
 
+import { useSession } from '@/components/ctx';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { StatusBar } from 'expo-status-bar';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const { session } = useSession();
   const [loaded] = useFonts({
     SpaceMono: require('../../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
   if (!loaded) {
     return null;
+  }
+  if (!session) {
+    // On web, static rendering will stop here as the user is not authenticated
+    // in the headless Node process that the pages are rendered in.
+    return <Redirect href="/sign-in" />;
   }
 
 
@@ -23,6 +30,12 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />
       </Stack>
+      <Stack.Screen
+        name="sign-in"
+        options={{
+          presentation: 'modal',
+        }}
+      />
       <StatusBar style="auto" />
     </ThemeProvider>
   );
