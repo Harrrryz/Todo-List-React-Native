@@ -1,10 +1,10 @@
 import { useTheme } from '@react-navigation/native';
 import { cva, type VariantProps } from 'class-variance-authority';
+import { Text } from 'components/ui/text';
 import type { LucideIcon } from 'lucide-react-native';
 import * as React from 'react';
 import { View, type ViewProps } from 'react-native';
-import { cn } from 'lib/utils';
-import { Text } from 'components/ui/text';
+import { cn } from '~/lib/utils';
 
 const alertVariants = cva(
   'relative bg-background w-full rounded-lg border border-border p-4 shadow shadow-foreground/10',
@@ -18,8 +18,8 @@ const alertVariants = cva(
     defaultVariants: {
       variant: 'default',
     },
-  }
-);
+
+  });
 
 function Alert({
   className,
@@ -43,6 +43,7 @@ function Alert({
         <Icon
           size={iconSize}
           color={variant === 'destructive' ? colors.notification : colors.text}
+          className='mt-[3px]'
         />
       </View>
       {children}
