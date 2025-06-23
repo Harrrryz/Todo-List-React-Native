@@ -1,5 +1,7 @@
 import { NormalAuthError, useSession } from '@/components/ctx';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { router } from 'expo-router';
+import { AlertTriangle } from 'lucide-react-native';
 import { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -16,6 +18,7 @@ export default function Authorization() {
     }
     try {
       await signIn(AccountLoginData);
+      router.replace('/');
     } catch (error) {
       if (error instanceof NormalAuthError) {
         console.error('Login error:', error.message);
@@ -48,12 +51,14 @@ export default function Authorization() {
       <TouchableOpacity style={styles.button} onPress={handleLogin}>
         <Text style={styles.buttonText}>Sign In</Text>
       </TouchableOpacity>
-      {error && <Alert variant='destructive' className='max-w-xl'>
-        <AlertTitle>Error!</AlertTitle>
-        <AlertDescription>
-          {error}
-        </AlertDescription>
-      </Alert>}
+      {error &&
+        <Alert icon={AlertTriangle} variant='destructive' className='max-w-xl mt-3'>
+          <AlertTitle>Error!</AlertTitle>
+          <AlertDescription>
+            {error}
+          </AlertDescription>
+        </Alert>
+      }
     </View>
   );
 }
