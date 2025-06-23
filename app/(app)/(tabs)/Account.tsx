@@ -1,6 +1,5 @@
 // src/screens/AccountScreen.tsx
 
-import { accountLogin } from '@/client';
 import React from 'react';
 import {
   Alert,
@@ -38,20 +37,6 @@ const AccountScreen = () => {
     avatar: 'https://dummyimage.com/150/000000/ffffff&text=HW', // Placeholder image
   };
 
-  const login = async () => {
-    const response = await accountLogin({
-      body: {
-        username: "a@a.com",
-        password: "qweasd",
-      },
-    });
-    if (response.status === 201 || response.status === 200) {
-      console.log('Login successful');
-      localStorage.setItem('token', response.data?.access_token || '');
-    } else {
-      console.error('Login failed', response.error);
-    }
-  };
 
   const handleLogout = () => {
     Alert.alert('Log Out', 'Are you sure you want to log out?', [
@@ -62,9 +47,6 @@ const AccountScreen = () => {
 
   return (
     <ScrollView style={styles.container}>
-      <TouchableOpacity onPress={login} style={{ padding: 20, backgroundColor: '#4A90E2', borderRadius: 10, margin: 20 }}>
-        <Text style={{ color: '#fff', textAlign: 'center' }}>Login</Text>
-      </TouchableOpacity>
       {/* --- Profile Header Section --- */}
       <View style={styles.profileHeader}>
         <Image source={{ uri: user.avatar }} style={styles.avatar} />
