@@ -1,14 +1,21 @@
 // src/screens/TodoDetailScreen.tsx
 
+import { TodoModel } from '@/client';
 import React, { useState } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
 
-import { Todo } from '@/types';
+
 
 const TodoDetailScreen = () => {
 
-  const todo: Todo = { id: '1', title: 'Buy groceries for the week', dueDate: 'Due: Tomorrow', isCompleted: false }
-  const [detailText, setDetailText] = useState(todo?.detail || '');
+  const todo: TodoModel = {
+    id: '1', item: 'Buy groceries for the week',
+    description: 'Remember to buy fruits, vegetables, and snacks.',
+    created_time: '2023-10-01T12:00:00Z',
+    importance: 'none',
+    user_id: ''
+  }
+  const [detailText, setDetailText] = useState(todo?.description || '');
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -18,8 +25,8 @@ const TodoDetailScreen = () => {
 
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.content}>
-          <Text style={styles.title}>{todo.title}</Text>
-          <Text style={styles.dueDate}>{todo.dueDate}</Text>
+          <Text style={styles.title}>{todo.item}</Text>
+          <Text style={styles.dueDate}>{todo.created_time}</Text>
 
           <View style={styles.inputContainer}>
             <TextInput

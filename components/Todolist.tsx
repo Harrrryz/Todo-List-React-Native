@@ -6,6 +6,7 @@ import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableWithoutFeedback
 
 
 
+
 /**
  * Renders a single todo item in the list.
  */
@@ -20,7 +21,7 @@ const TodoItem: React.FC<{ item: TodoModel }> = ({ item }) => (
           pathname: '/todo/[id]',
           params: { id: item.id }
         }} asChild>
-          <Text style={[styles.itemDueDate]}>
+          <Text style={styles.itemDueDate}>
             {item.created_time}
           </Text>
         </Link>
