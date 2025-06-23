@@ -25,6 +25,7 @@
     "@rn-primitives/slot": "^1.2.0",
     "@rn-primitives/tabs": "^1.2.0",
     "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "expo": "~53.0.7",
     "expo-blur": "~14.1.4",
     "expo-constants": "~17.1.5",
@@ -39,7 +40,7 @@
     "expo-status-bar": "~2.2.3",
     "expo-symbols": "~0.4.4",
     "expo-system-ui": "~5.0.7",
-    "expo-web-browser": "~14.1.6",
+    "expo-w-browser": "~14.1.6",
     "lucide-react-native": "^0.517.0",
     "nativewind": "^4.1.23",
     "react": "19.0.0",
@@ -51,7 +52,9 @@
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.10.0",
     "react-native-web": "~0.20.0",
-    "react-native-webview": "13.13.5"
+    "react-native-webview": "13.13.5",
+    "tailwind-merge": "^3.3.1",
+    "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
