@@ -15,10 +15,16 @@ const AuthContext = createContext<{
   isLoading: false,
 });
 
+interface LoginErrorMessage {
+  message: string;
+  key: string;
+}
+
 interface LoginError {
   status: number;
   title?: string;
   detail?: string;
+  extra?: LoginErrorMessage[];
 }
 
 export class NormalAuthError extends Error {
@@ -50,6 +56,14 @@ export function SessionProvider({ children }: PropsWithChildren) {
   const router = useRouter();
 
   const signIn = async (data: AccountLogin) => {
+    // if data.username is not email, throw error
+    if (!data.username || !data.password) {
+      throw new NormalAuthError('Username and password are required');
+    }
+    if (!data.username.includes('@')) {
+      throw new NormalAuthError('Username must be an email address');
+    }
+
     const response = await accountLogin({
       body: { ...data },
     });
@@ -60,6 +74,15 @@ export function SessionProvider({ children }: PropsWithChildren) {
     } else {
       console.error('Login failed:', response.error);
       if ((response.error as unknown as LoginError).title) {
+        let extraMessage = ''
+        let extra = (response.error as unknown as LoginError).extra || [];
+        if (extra.length > 0) {
+          extraMessage = extra.map((e) => `${e.key}: ${e.message}`).join(', ');
+        }
+        // if has extraMessage only use it
+        if (extraMessage) {
+          throw new NormalAuthError(extraMessage || 'Login failed');
+        }
         throw new NormalAuthError((response.error as unknown as LoginError).title || 'Login failed');
       } else {
         throw new OtherAuthError('Login failed', response.error as unknown as LoginError);
