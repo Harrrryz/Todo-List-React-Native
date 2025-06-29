@@ -1,37 +1,58 @@
 // src/screens/CalendarScreen.tsx
 
-import { TodoModel } from '@/client';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { Calendar, DateData } from 'react-native-calendars';
 
+import { listTodos, TodoModel } from '@/client'; // Adjust the import path as necessary
 // Helper to get today's date in 'YYYY-MM-DD' format
 const getTodayDateString = () => new Date().toISOString().split('T')[0];
 
 
-// A reusable TodoItem component, slightly adapted for this context
+
+// A reusable TodoItem component, without completion styling.
 const TodoItem: React.FC<{ item: TodoModel }> = ({ item }) => (
   <View style={styles.itemContainer}>
-
     <View style={styles.itemTextContainer}>
-      <Text style={[styles.itemTitle, styles.completedText]}>
+      {/* FIX: Removed unconditional strikethrough style. All items display as active. */}
+      <Text style={styles.itemTitle}>
         {item.item}
       </Text>
     </View>
   </View>
 );
 
-
-const CalendarScreen = (items: TodoModel[]) => {
+const CalendarScreen = () => {
   const [selectedDate, setSelectedDate] = useState<string>(getTodayDateString());
+  // Calculate the initial date only once to avoid re-calculating on every render
+  const [initialDate] = useState(getTodayDateString());
+  const [todoList, setTodoList] = useState<TodoModel[]>([]);
+
+  useEffect(() => {
+    const fetchTodos = async () => {
+      try {
+        // Fetch the todo list from the API
+        const response = await listTodos();
+        const items = response.data?.items || [];
+        setTodoList(items);
+      } catch (error) {
+        console.error('Failed to fetch todos:', error);
+      }
+    };
+
+    fetchTodos();
+  }, []);
 
   // Memoize the marked dates to prevent recalculation on every render
   const markedDates = useMemo(() => {
     const marks: { [key: string]: any } = {};
 
-    items.forEach(todo => {
-      marks[todo.created_time] = { marked: true, dotColor: '#5092D8' };
+    todoList.forEach(todo => {
+      // Extract only the date part (YYYY-MM-DD) from the full timestamp
+      const datePart = todo.created_time.split('T')[0];
+      marks[datePart] = { marked: true, dotColor: '#5092D8' };
     });
+
 
     // Add selected date styling
     marks[selectedDate] = {
@@ -42,12 +63,13 @@ const CalendarScreen = (items: TodoModel[]) => {
     };
 
     return marks;
-  }, [items, selectedDate]);
+  }, [todoList, selectedDate]);
 
   // Memoize the filtered list of todos for the selected date
   const todosForSelectedDate = useMemo(() => {
-    return items.filter(todo => todo.created_time === selectedDate);
-  }, [items, selectedDate]);
+    // Filter by comparing only the date part of the timestamp
+    return todoList.filter(todo => todo.created_time.split('T')[0] === selectedDate);
+  }, [todoList, selectedDate]);
 
   const onDayPress = (day: DateData) => {
     setSelectedDate(day.dateString);
@@ -56,13 +78,9 @@ const CalendarScreen = (items: TodoModel[]) => {
   return (
     <View style={styles.container}>
       <Calendar
-        // Handler which gets executed on day press.
         onDayPress={onDayPress}
-        // Collection of dates that have to be marked.
         markedDates={markedDates}
-        // Set the initial month to today
-        current={getTodayDateString()}
-        // Theme styling for the calendar
+        current={initialDate}
         theme={{
           backgroundColor: '#ffffff',
           calendarBackground: '#ffffff',
@@ -115,9 +133,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
   },
-  itemIcon: {
-    marginRight: 15,
-  },
   itemTextContainer: {
     flex: 1,
   },
@@ -125,10 +140,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-  completedText: {
-    textDecorationLine: 'line-through',
-    color: '#A0A0A0',
-  },
+  // FIX: Removed unused 'completedText' style
   emptyListContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -137,8 +149,8 @@ const styles = StyleSheet.create({
   },
   emptyListText: {
     fontSize: 16,
-    color: '#999'
-  }
+    color: '#999',
+  },
 });
 
 export default CalendarScreen;

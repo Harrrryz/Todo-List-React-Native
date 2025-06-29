@@ -6,7 +6,6 @@ import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableWithoutFeedback
 
 
 
-
 /**
  * Renders a single todo item in the list.
  */
@@ -30,8 +29,11 @@ const TodoItem: React.FC<{ item: TodoModel }> = ({ item }) => (
   </TouchableWithoutFeedback>
 );
 
+interface TodoItemProps {
+  refetchKey: number;
+}
 
-const RecentTodoList = () => {
+const RecentTodoList: React.FC<TodoItemProps> = ({ refetchKey }) => {
   // State hooks must be called inside the component
   const [todos, setTodos] = useState<TodoModel[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -55,7 +57,7 @@ const RecentTodoList = () => {
     };
 
     fetchAndSetTodos();
-  }, []);
+  }, [refetchKey]);
 
 
   if (isLoading) {

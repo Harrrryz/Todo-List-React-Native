@@ -1,16 +1,32 @@
 // src/screens/TodoListScreen.tsx
 
+import { CreateTodoData } from '@/client';
+import { createTodo } from '@/client/sdk.gen';
 import FilterButtons from '@/components/FilterButtons';
 import LeftSidebar from '@/components/LeftSidebar';
 import TodoList from '@/components/Todolist';
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 const TodoListScreen = () => {
+
+  const [addTodoRefactorKey, setAddTodoRefactorKey] = useState(0);
+
+  const handleAddTodo = async (createTodoData: CreateTodoData) => {
+    try {
+
+      await createTodo(createTodoData)
+      setAddTodoRefactorKey(prevKey => prevKey + 1);
+
+    } catch (error) {
+      console.error("Error creating todo:", error);
+    }
+  }
+
   return (
     <View style={styles.container}>
       {/* Part 1: Left Sidebar */}
-      <LeftSidebar />
+      <LeftSidebar onAdd={handleAddTodo} />
 
       {/* This View holds the right side content */}
       <View style={styles.mainContent}>
@@ -18,7 +34,7 @@ const TodoListScreen = () => {
         <FilterButtons />
 
         {/* Part 3: Bottom Right Todo List */}
-        <TodoList />
+        <TodoList refetchKey={addTodoRefactorKey} />
       </View>
     </View>
   );

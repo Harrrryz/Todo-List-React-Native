@@ -1,8 +1,8 @@
 // src/screens/AccountScreen.tsx
 
+import { useSession } from '@/components/ctx';
 import React from 'react';
 import {
-  Alert,
   Image,
   ScrollView,
   StyleSheet,
@@ -29,6 +29,7 @@ const SettingsRow: React.FC<SettingsRowProps> = ({ icon, label, onPress }) => (
 
 // --- Main Account Screen Component ---
 const AccountScreen = () => {
+  const { signOut } = useSession();
   // Dummy data for the user
   const user = {
     username: 'a@a.com',
@@ -39,10 +40,7 @@ const AccountScreen = () => {
 
 
   const handleLogout = () => {
-    Alert.alert('Log Out', 'Are you sure you want to log out?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Log Out', onPress: () => console.log('User logged out') },
-    ]);
+    signOut()
   };
 
   return (
@@ -75,22 +73,22 @@ const AccountScreen = () => {
         <SettingsRow
           icon="account-edit-outline"
           label="Edit Profile"
-          onPress={() => Alert.alert('Navigate', 'Go to Edit Profile page')}
+          onPress={() => console.log('Edit Profile Pressed')}
         />
         <SettingsRow
           icon="bell-outline"
           label="Notifications"
-          onPress={() => Alert.alert('Navigate', 'Go to Notifications settings')}
+          onPress={() => console.log('Notifications Pressed')}
         />
         <SettingsRow
           icon="cog-outline"
           label="App Settings"
-          onPress={() => Alert.alert('Navigate', 'Go to App Settings page')}
+          onPress={() => console.log('App Settings Pressed')}
         />
         <SettingsRow
           icon="help-circle-outline"
           label="Help & Support"
-          onPress={() => Alert.alert('Navigate', 'Go to Help & Support page')}
+          onPress={() => console.log('Help & Support Pressed')}
         />
       </View>
 
