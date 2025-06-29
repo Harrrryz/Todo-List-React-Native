@@ -1,7 +1,8 @@
 // src/screens/AccountScreen.tsx
 
+import { listTodos } from '@/client';
 import { useSession } from '@/components/ctx';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Image,
   ScrollView,
@@ -12,20 +13,6 @@ import {
 } from 'react-native';
 
 
-// --- Reusable Row Component for Settings ---
-interface SettingsRowProps {
-  icon: string;
-  label: string;
-  onPress: () => void;
-}
-
-const SettingsRow: React.FC<SettingsRowProps> = ({ icon, label, onPress }) => (
-  <TouchableOpacity style={styles.settingsRow} onPress={onPress}>
-
-    <Text style={styles.settingsLabel}>{label}</Text>
-
-  </TouchableOpacity>
-);
 
 // --- Main Account Screen Component ---
 const AccountScreen = () => {
@@ -43,54 +30,36 @@ const AccountScreen = () => {
     signOut()
   };
 
+  const [totalTasks, setTotalTasks] = useState(0);
+
+  useEffect(() => {
+    // Simulate fetching total tasks from an API
+    const fetchData = async () => {
+      const todos = await listTodos();
+      //get numbers of todos
+      setTotalTasks(todos.data?.items ? todos.data.items.length : 0);
+
+    };
+
+    fetchData();
+  }, []);
+
   return (
     <ScrollView style={styles.container}>
       {/* --- Profile Header Section --- */}
       <View style={styles.profileHeader}>
         <Image source={{ uri: user.avatar }} style={styles.avatar} />
         <Text style={styles.userName}>{user.username}</Text>
-        <Text style={styles.userEmail}>{user.email}</Text>
       </View>
 
       {/* --- Statistics Section --- */}
       <View style={styles.statsContainer}>
         <View style={styles.statBox}>
-          <Text style={styles.statNumber}>42</Text>
-          <Text style={styles.statLabel}>Completed</Text>
-        </View>
-        <View style={styles.statBox}>
-          <Text style={styles.statNumber}>15</Text>
-          <Text style={styles.statLabel}>Pending</Text>
-        </View>
-        <View style={styles.statBox}>
-          <Text style={styles.statNumber}>74%</Text>
-          <Text style={styles.statLabel}>Productivity</Text>
+          <Text style={styles.statNumber}>{totalTasks}</Text>
+          <Text style={styles.statLabel}>Created</Text>
         </View>
       </View>
 
-      {/* --- Settings & Actions Section --- */}
-      <View style={styles.settingsSection}>
-        <SettingsRow
-          icon="account-edit-outline"
-          label="Edit Profile"
-          onPress={() => console.log('Edit Profile Pressed')}
-        />
-        <SettingsRow
-          icon="bell-outline"
-          label="Notifications"
-          onPress={() => console.log('Notifications Pressed')}
-        />
-        <SettingsRow
-          icon="cog-outline"
-          label="App Settings"
-          onPress={() => console.log('App Settings Pressed')}
-        />
-        <SettingsRow
-          icon="help-circle-outline"
-          label="Help & Support"
-          onPress={() => console.log('Help & Support Pressed')}
-        />
-      </View>
 
       {/* --- Logout Button --- */}
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
