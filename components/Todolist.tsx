@@ -1,64 +1,80 @@
-import { listTodos, TodoModel } from '@/client';
+import { deleteTodo, DeleteTodoData, listTodos, TodoModel } from '@/client';
 import { Link } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableWithoutFeedback, View } from 'react-native';
-
-
-
+import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 /**
  * Renders a single todo item in the list.
  */
-const TodoItem: React.FC<{ item: TodoModel }> = ({ item }) => (
-  <TouchableWithoutFeedback>
-    <View style={styles.itemContainer}>
-      <View style={styles.itemTextContainer}>
-        <Text style={[styles.itemTitle]}>
+const TodoItem: React.FC<{ item: TodoModel; onDelete: (id: string) => void }> = ({ item, onDelete }) => (
+  <View style={styles.itemContainer}>
+    {/* The main content of the item is a link to the detail page */}
+    <Link href={{ pathname: '/todo/[id]', params: { id: item.id } }} asChild style={styles.itemTextContainer}>
+      <TouchableOpacity>
+        <Text style={styles.itemTitle}>
           {item.item}
         </Text>
-        <Link href={{
-          pathname: '/todo/[id]',
-          params: { id: item.id }
-        }} asChild>
-          <Text style={styles.itemDueDate}>
-            {item.created_time}
-          </Text>
-        </Link>
-      </View>
-    </View>
-  </TouchableWithoutFeedback>
+        <Text style={styles.itemDueDate}>
+          {item.created_time}
+        </Text>
+      </TouchableOpacity>
+    </Link>
+    {/* A small button on the right to delete the item */}
+    <TouchableOpacity onPress={() => onDelete(item.id)} style={styles.deleteButton}>
+      <Text style={styles.deleteButtonText}>×</Text>
+    </TouchableOpacity>
+  </View>
 );
 
-interface TodoItemProps {
+interface RecentTodoListProps {
   refetchKey: number;
 }
 
-const RecentTodoList: React.FC<TodoItemProps> = ({ refetchKey, }) => {
+const RecentTodoList: React.FC<RecentTodoListProps> = ({ refetchKey }) => {
   // State hooks must be called inside the component
   const [todos, setTodos] = useState<TodoModel[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Move fetchAndSetTodos outside useEffect so it can be reused
+  const fetchAndSetTodos = async () => {
+    try {
+      setIsLoading(true);
+      const result = await listTodos();
+      const items = result.data?.items || [];
+      setTodos(items);
+    } catch (e) {
+      console.error('Failed to fetch todos:', e);
+      setError('Failed to load todos. Please try again later.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-
-    const fetchAndSetTodos = async () => {
-      try {
-        setIsLoading(true);
-        const result = await listTodos();
-        const items = result.data?.items || [];
-        setTodos(items);
-      } catch (e) {
-        console.error('Failed to fetch todos:', e);
-        setError('Failed to load todos. Please try again later.');
-
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchAndSetTodos();
   }, [refetchKey]);
 
+  /**
+   * Handles the deletion of a todo item.
+   * After a successful deletion, it calls `onDataChange` to trigger a refetch.
+   */
+  const handleDeleteItem = async (id: string) => {
+    try {
+      console.log('Deleting todo with ID:', id);
+      let todoDeleteData: DeleteTodoData = {
+        path: { todo_id: id },
+        url: '/todos/{todo_id}',
+      };
+      await deleteTodo(todoDeleteData);
+      // Refetch todos after deletion
+      fetchAndSetTodos();
+
+    } catch (e) {
+      console.error('Failed to delete todo:', e);
+      Alert.alert('Error', 'Failed to delete the item. Please try again.');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -68,7 +84,6 @@ const RecentTodoList: React.FC<TodoItemProps> = ({ refetchKey, }) => {
       </View>
     );
   }
-
 
   if (error) {
     return (
@@ -83,7 +98,7 @@ const RecentTodoList: React.FC<TodoItemProps> = ({ refetchKey, }) => {
       <Text style={styles.title}>Recent Todos</Text>
       <FlatList
         data={todos} // Use the state variable for data
-        renderItem={({ item }) => <TodoItem item={item} />}
+        renderItem={({ item }) => <TodoItem item={item} onDelete={handleDeleteItem} />}
         keyExtractor={item => item.id}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
@@ -117,6 +132,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between', // Pushes the text and button to opposite ends
     marginBottom: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -125,7 +141,8 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   itemTextContainer: {
-    flex: 1,
+    flex: 1, // Allows the text container to take up available space
+    marginRight: 10, // Add some space before the delete button
   },
   itemTitle: {
     fontSize: 16,
@@ -135,6 +152,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#007AFF', // Making links look more like links
     marginTop: 4,
+  },
+  deleteButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#FF3B30',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   completedText: {
     textDecorationLine: 'line-through',
