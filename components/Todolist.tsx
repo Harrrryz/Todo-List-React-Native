@@ -33,7 +33,7 @@ interface TodoItemProps {
   refetchKey: number;
 }
 
-const RecentTodoList: React.FC<TodoItemProps> = ({ refetchKey }) => {
+const RecentTodoList: React.FC<TodoItemProps> = ({ refetchKey, }) => {
   // State hooks must be called inside the component
   const [todos, setTodos] = useState<TodoModel[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
