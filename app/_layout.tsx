@@ -2,6 +2,7 @@ import { client } from '@/client/client.gen';
 import { SessionProvider } from '@/components/ctx';
 import "@/global.css";
 import { DarkTheme, DefaultTheme, Theme, ThemeProvider } from '@react-navigation/native';
+import { PortalHost } from '@rn-primitives/portal';
 import { useFonts } from 'expo-font';
 import { Slot } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
@@ -80,6 +81,7 @@ export default function RootLayout() {
       <ThemeProvider value={isDarkColorScheme ? DARK_THEME : LIGHT_THEME}>
         <StatusBar style={isDarkColorScheme ? 'light' : 'dark'} />
         <Slot />
+        <PortalHost />
       </ThemeProvider>
     </SessionProvider>
   );
