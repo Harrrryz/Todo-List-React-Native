@@ -1,8 +1,10 @@
 // src/screens/AccountScreen.tsx
 
-import { listTodos } from '@/client';
+import { accountProfile, listTodos, TodoModel, User } from '@/client';
 import { useSession } from '@/components/ctx';
-import React, { useEffect, useState } from 'react';
+// 1. Import useFocusEffect from React Navigation
+import { useFocusEffect } from '@react-navigation/native';
+import React, { useCallback, useEffect, useState } from 'react'; // <-- Import useCallback
 import {
   Image,
   ScrollView,
@@ -12,44 +14,65 @@ import {
   View,
 } from 'react-native';
 
-
-
 // --- Main Account Screen Component ---
 const AccountScreen = () => {
   const { signOut } = useSession();
-  // Dummy data for the user
-  const user = {
-    username: 'a@a.com',
-    email: 'helloworld@example.com',
-    password: 'qweasd', // Placeholder for password
-    avatar: 'https://dummyimage.com/150/000000/ffffff&text=HW', // Placeholder image
-  };
-
 
   const handleLogout = () => {
-    signOut()
+    signOut();
   };
 
-  const [totalTasks, setTotalTasks] = useState(0);
+  const [todoList, setTodoList] = useState<TodoModel[]>([]);
+  const [user, setUser] = useState<User | undefined>();
 
   useEffect(() => {
-    // Simulate fetching total tasks from an API
-    const fetchData = async () => {
-      const todos = await listTodos();
-      //get numbers of todos
-      setTotalTasks(todos.data?.items ? todos.data.items.length : 0);
-
+    const fetchUserData = async () => {
+      try {
+        const userData = await accountProfile();
+        setUser(userData.data);
+      } catch (error) {
+        console.error("Failed to fetch user data:", error);
+      }
     };
 
-    fetchData();
+    fetchUserData();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      // This function will run every time the screen comes into focus
+      const fetchData = async () => {
+        try {
+          console.log('Fetching todos on screen focus...');
+          const todos = await listTodos();
+          setTodoList(todos.data?.items || []);
+        } catch (error) {
+          console.error("Failed to fetch todos:", error);
+          // Optionally handle the error in the UI
+        }
+      };
+
+      fetchData();
+
+      // Optional: You can return a cleanup function that runs when the screen goes out of focus
+      return () => {
+        console.log('Account screen is unfocused.');
+        // For example, you could cancel a subscription here
+      };
+    }, []) // Empty dependency array means the callback itself doesn't depend on any props or state
+  );
+
+  const totalTasks = todoList.length;
 
   return (
     <ScrollView style={styles.container}>
       {/* --- Profile Header Section --- */}
       <View style={styles.profileHeader}>
-        <Image source={{ uri: user.avatar }} style={styles.avatar} />
-        <Text style={styles.userName}>{user.username}</Text>
+        <Image
+          source={{ uri: 'https://via.placeholder.com/100' }}
+          style={styles.avatar}
+        />
+        <Text style={styles.userName}>{user?.email}</Text>
       </View>
 
       {/* --- Statistics Section --- */}
@@ -60,7 +83,6 @@ const AccountScreen = () => {
         </View>
       </View>
 
-
       {/* --- Logout Button --- */}
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Text style={styles.logoutButtonText}>LOG OUT</Text>
@@ -69,6 +91,7 @@ const AccountScreen = () => {
   );
 };
 
+// ... your styles remain the same
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -155,5 +178,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
+
 
 export default AccountScreen;
