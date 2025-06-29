@@ -110,16 +110,18 @@ const TodoDetailScreen = () => {
       style={styles.container}
       keyboardVerticalOffset={100}
     >
+      <View style={{ paddingTop: 40 }}>
+        <Button
+          className='rounded-none'
+          onPress={() => {
+            /* authenticate user */
+            router.replace('/home');
+          }}
+        >
+          <Text style={{ color: 'black' }}>Back</Text>
+        </Button>
 
-      <Button
-        className='rounded-none'
-        onPress={() => {
-          /* authenticate user */
-          router.replace('/home');
-        }}
-      >
-        <Text style={{ color: 'white' }}>Back</Text>
-      </Button>
+      </View>
 
       <View style={styles.content}>
         {/* 4. It's now safe to access todo properties directly */}
