@@ -18,21 +18,21 @@ export default function TabLayout() {
         name="home"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <Ionicons name="home" size={24} color="black" />,
+          tabBarIcon: ({ color }) => <Ionicons name="home" size={24} color={Colors[colorScheme ?? 'light'].tint} />,
         }}
       />
       <Tabs.Screen
         name="calendar"
         options={{
           title: 'Calendar',
-          tabBarIcon: ({ color }) => <AntDesign name="calendar" size={24} color="black" />,
+          tabBarIcon: ({ color }) => <AntDesign name="calendar" size={24} color={Colors[colorScheme ?? 'light'].tint} />,
         }}
       />
       <Tabs.Screen
         name="account"
         options={{
           title: 'Account',
-          tabBarIcon: ({ color }) => <Ionicons name="person" size={24} color="black" />,
+          tabBarIcon: ({ color }) => <Ionicons name="person" size={24} color={Colors[colorScheme ?? 'light'].tint} />,
         }}
       />
     </Tabs>
