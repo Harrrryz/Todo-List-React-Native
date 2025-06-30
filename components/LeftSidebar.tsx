@@ -31,13 +31,10 @@ import { Input } from './ui/input';
 
 interface LeftSidebarProps {
   onAdd: (createTodoData: CreateTodoData) => void;
+  onSearch: () => void;
 }
 
-const LeftSidebar: React.FC<LeftSidebarProps> = ({ onAdd }) => {
-  const handleSearch = () => {
-    Alert.alert('Search Action', 'You clicked the search button!');
-  };
-
+const LeftSidebar: React.FC<LeftSidebarProps> = ({ onAdd, onSearch }) => {
   const [todoItem, setTodoItem] = useState('');
   const [todoDescription, setTodoDescription] = useState<string | undefined>(undefined);
 
@@ -62,7 +59,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ onAdd }) => {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={handleSearch} style={styles.iconButton}>
+      <TouchableOpacity onPress={onSearch} style={styles.iconButton}>
         <AntDesign name="search1" size={24} color="black" />
       </TouchableOpacity>
 

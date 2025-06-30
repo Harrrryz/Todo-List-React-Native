@@ -1,7 +1,9 @@
-import { deleteTodo, DeleteTodoData, listTodos, TodoModel } from '@/client';
+import { deleteTodo, DeleteTodoData, listTodos, ListTodosData, TodoModel } from '@/client';
 import { Link } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useDebounce } from 'use-debounce';
+import { Input } from './ui/input';
 
 /**
  * Renders a single todo item in the list.
@@ -28,13 +30,17 @@ const TodoItem: React.FC<{ item: TodoModel; onDelete: (id: string) => void }> = 
 
 interface RecentTodoListProps {
   refetchKey: number;
+  showSearchInput: boolean; // Optional prop to control search input visibility
 }
 
-const RecentTodoList: React.FC<RecentTodoListProps> = ({ refetchKey }) => {
+const RecentTodoList: React.FC<RecentTodoListProps> = ({ refetchKey, showSearchInput }) => {
   // State hooks must be called inside the component
   const [todos, setTodos] = useState<TodoModel[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchText, setSearchText] = useState<string>(''); // State for search input
+  const [debouncedSearchText] = useDebounce(searchText, 1000);
+  const inputRef = useRef<any>(null);
 
   // Move fetchAndSetTodos outside useEffect so it can be reused
   const fetchAndSetTodos = async () => {
@@ -51,9 +57,34 @@ const RecentTodoList: React.FC<RecentTodoListProps> = ({ refetchKey }) => {
     }
   };
 
+  const searchTodos = async () => {
+    if (debouncedSearchText) {
+      const data: ListTodosData = {
+        query: { searchString: debouncedSearchText },
+        url: '/todos',
+      };
+      try {
+        const result = await listTodos(data);
+        const items = result.data?.items || [];
+        setTodos(items);
+        if (inputRef.current) {
+          inputRef.current.blur(); // Optionally blur the input after search
+        }
+      } catch (error) {
+        console.error('Error fetching todos with search:', error);
+        setError('Failed to search todos. Please try again later.');
+      }
+    }
+  };
+
   useEffect(() => {
     fetchAndSetTodos();
   }, [refetchKey]);
+
+  useEffect(() => {
+    searchTodos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearchText]);
 
   /**
    * Handles the deletion of a todo item.
@@ -93,9 +124,33 @@ const RecentTodoList: React.FC<RecentTodoListProps> = ({ refetchKey }) => {
     );
   }
 
+  const handleSearch = (text: string): void => {
+
+    setSearchText(text);
+    // Trigger a re-fetch or filter the todo list based on the search text
+
+  }
+
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Recent Todos</Text>
+      <Text>searchText: {searchText}</Text>
+      <Text>debouncedSearchText: {debouncedSearchText}</Text>
+      {/* <Text>showSearchInput: {JSON.stringify(showSearchInput)}</Text> */}
+      {showSearchInput && (
+        <Input
+          placeholder='Search todos...'
+          value={searchText}
+          onChangeText={handleSearch}
+          aria-labelledby='inputLabel'
+          aria-errormessage='inputError'
+          ref={inputRef}
+        />
+      )}
+
+      {/* Render the list of todos */}
+
       <FlatList
         data={todos} // Use the state variable for data
         renderItem={({ item }) => <TodoItem item={item} onDelete={handleDeleteItem} />}

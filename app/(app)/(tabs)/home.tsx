@@ -11,6 +11,7 @@ import { StyleSheet, View } from 'react-native';
 const TodoListScreen = () => {
 
   const [addTodoRefactorKey, setAddTodoRefactorKey] = useState(0);
+  const [showSearchInput, setShowSearchInput] = useState(false);
 
   const handleAddTodo = async (createTodoData: CreateTodoData) => {
     try {
@@ -23,10 +24,16 @@ const TodoListScreen = () => {
     }
   }
 
+  const handleSearch = () => {
+    // Placeholder for search functionality
+    setShowSearchInput(!showSearchInput);
+    console.log("Search button clicked, showSearchInput:", showSearchInput);
+  };
+
   return (
     <View style={styles.container}>
       {/* Part 1: Left Sidebar */}
-      <LeftSidebar onAdd={handleAddTodo} />
+      <LeftSidebar onAdd={handleAddTodo} onSearch={handleSearch} />
 
       {/* This View holds the right side content */}
       <View style={styles.mainContent}>
@@ -34,7 +41,7 @@ const TodoListScreen = () => {
         <FilterButtons />
 
         {/* Part 3: Bottom Right Todo List */}
-        <TodoList refetchKey={addTodoRefactorKey} />
+        <TodoList refetchKey={addTodoRefactorKey} showSearchInput={showSearchInput} />
       </View>
     </View>
   );
