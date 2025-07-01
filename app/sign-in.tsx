@@ -32,6 +32,7 @@ export default function Authorization() {
 
   return (
     <View style={styles.container}>
+      <Text style={styles.commitText}>Commit</Text>
       <Text style={styles.title}>Login</Text>
       <TextInput
         style={styles.input}
@@ -64,6 +65,14 @@ export default function Authorization() {
 }
 
 const styles = StyleSheet.create({
+
+  commitText: {
+    fontSize: 40,
+    fontWeight: 'bold',
+    paddingBottom: 30,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
   container: {
     flex: 1,
     justifyContent: 'center',

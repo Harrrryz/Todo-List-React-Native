@@ -135,8 +135,6 @@ const RecentTodoList: React.FC<RecentTodoListProps> = ({ refetchKey, showSearchI
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Recent Todos</Text>
-      <Text>searchText: {searchText}</Text>
-      <Text>debouncedSearchText: {debouncedSearchText}</Text>
       {/* <Text>showSearchInput: {JSON.stringify(showSearchInput)}</Text> */}
       {showSearchInput && (
         <Input
