@@ -18,6 +18,26 @@ export type AccountRegister = {
 };
 
 /**
+ * AgentTodoRequest
+ */
+export type AgentTodoRequest = {
+    messages: Array<{
+        [key: string]: unknown;
+    }>;
+};
+
+/**
+ * AgentTodoResponse
+ */
+export type AgentTodoResponse = {
+    status: string;
+    message: string;
+    agent_response: Array<{
+        [key: string]: unknown;
+    }>;
+};
+
+/**
  * Importance
  * Importance levels for todo items.
  */
@@ -547,6 +567,35 @@ export type RevokeUserRoleResponses = {
 };
 
 export type RevokeUserRoleResponse = RevokeUserRoleResponses[keyof RevokeUserRoleResponses];
+
+export type AgentCreateTodoData = {
+    body: AgentTodoRequest;
+    path?: never;
+    query?: never;
+    url: '/todos/agent-create';
+};
+
+export type AgentCreateTodoErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        status_code: number;
+        detail: string;
+        extra?: null | Array<unknown> | Array<unknown>;
+    };
+};
+
+export type AgentCreateTodoError = AgentCreateTodoErrors[keyof AgentCreateTodoErrors];
+
+export type AgentCreateTodoResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: AgentTodoResponse;
+};
+
+export type AgentCreateTodoResponse = AgentCreateTodoResponses[keyof AgentCreateTodoResponses];
 
 export type CreateTagData = {
     body: TagCreate;
