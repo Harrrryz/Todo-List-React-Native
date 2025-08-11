@@ -5,6 +5,7 @@ import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { Calendar, DateData } from 'react-native-calendars';
 
 import { listTodos, TodoModel } from '@/client'; // Adjust the import path as necessary
+import dayjs from 'dayjs';
 // Helper to get today's date in 'YYYY-MM-DD' format
 const getTodayDateString = () => new Date().toISOString().split('T')[0];
 
@@ -49,7 +50,9 @@ const CalendarScreen = () => {
 
     todoList.forEach(todo => {
       // Extract only the date part (YYYY-MM-DD) from the full timestamp
-      const datePart = todo.created_time.split('T')[0];
+      const datePart = dayjs(todo.plan_time).format('YYYY-MM-DD');
+      console.log(`Marking date: ${datePart} for todo: ${todo.item}`);
+      if (!datePart) return;
       marks[datePart] = { marked: true, dotColor: '#5092D8' };
     });
 
@@ -68,7 +71,7 @@ const CalendarScreen = () => {
   // Memoize the filtered list of todos for the selected date
   const todosForSelectedDate = useMemo(() => {
     // Filter by comparing only the date part of the timestamp
-    return todoList.filter(todo => todo.created_time.split('T')[0] === selectedDate);
+    return todoList.filter(todo => dayjs(todo.plan_time).format('YYYY-MM-DD') === selectedDate);
   }, [todoList, selectedDate]);
 
   const onDayPress = (day: DateData) => {
