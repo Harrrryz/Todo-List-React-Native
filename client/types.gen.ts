@@ -18,23 +18,115 @@ export type AccountRegister = {
 };
 
 /**
+ * AgentSessionCreate
+ */
+export type AgentSessionCreate = {
+    /**
+     * Unique session identifier
+     */
+    sessionid: string;
+    /**
+     * Human-readable session name
+     */
+    sessionname?: string | null;
+    /**
+     * Optional session description
+     */
+    description?: string | null;
+    /**
+     * Whether the session is active
+     */
+    isactive?: boolean;
+    /**
+     * Name of the AI agent
+     */
+    agentname?: string | null;
+    /**
+     * Instructions for the AI agent
+     */
+    agentinstructions?: string | null;
+};
+
+/**
+ * AgentSessionSchema
+ */
+export type AgentSessionSchema = {
+    id: string;
+    session_id: string;
+    session_name?: string | null;
+    description?: string | null;
+    is_active: boolean;
+    user_id: string;
+    agent_name?: string | null;
+    agent_instructions?: string | null;
+    created_at: unknown;
+    updated_at: unknown;
+};
+
+/**
+ * AgentSessionUpdate
+ */
+export type AgentSessionUpdate = {
+    /**
+     * Human-readable session name
+     */
+    sessionname?: string | null;
+    /**
+     * Optional session description
+     */
+    description?: string | null;
+    /**
+     * Whether the session is active
+     */
+    isactive?: boolean | null;
+    /**
+     * Name of the AI agent
+     */
+    agentname?: string | null;
+    /**
+     * Instructions for the AI agent
+     */
+    agentinstructions?: string | null;
+};
+
+/**
  * AgentTodoRequest
  */
 export type AgentTodoRequest = {
+    /**
+     * List of conversation messages
+     */
     messages: Array<{
         [key: string]: unknown;
     }>;
+    /**
+     * Optional session ID for conversation persistence
+     */
+    sessionid?: string | null;
+    /**
+     * Optional human-readable session name
+     */
+    sessionname?: string | null;
 };
 
 /**
  * AgentTodoResponse
  */
 export type AgentTodoResponse = {
+    /**
+     * Status of the operation (success/error)
+     */
     status: string;
+    /**
+     * Agent response message
+     */
     message: string;
-    agent_response: Array<{
+    /**
+     * Conversation history
+     */
+    agent_response?: Array<{
         [key: string]: unknown;
-    }>;
+    }> | null;
 };
 
 /**
@@ -74,6 +166,107 @@ export type OauthAccount = {
 };
 
 /**
+ * SessionConversationRequest
+ */
+export type SessionConversationRequest = {
+    /**
+     * List of conversation messages
+     */
+    messages: Array<{
+        [key: string]: unknown;
+    }>;
+    /**
+     * Optional session ID for conversation persistence
+     */
+    session_id?: string | null;
+    /**
+     * Optional human-readable session name
+     */
+    session_name?: string | null;
+};
+
+/**
+ * SessionConversationResponse
+ */
+export type SessionConversationResponse = {
+    /**
+     * Session identifier
+     */
+    session_id: string;
+    /**
+     * Session UUID
+     */
+    session_uuid: string;
+    /**
+     * Agent response
+     */
+    response: string;
+    /**
+     * Total number of messages in session
+     */
+    messages_count: number;
+    /**
+     * Whether the session is active
+     */
+    session_active: boolean;
+};
+
+/**
+ * SessionMessageCreate
+ */
+export type SessionMessageCreate = {
+    /**
+     * Role of the message sender
+     */
+    role: unknown;
+    /**
+     * Message content
+     */
+    content: string;
+    /**
+     * Tool call identifier
+     */
+    tool_call_id?: string | null;
+    /**
+     * Name of the tool used
+     */
+    tool_name?: string | null;
+    /**
+     * Additional metadata as JSON string
+     */
+    extra_data?: string | null;
+};
+
+/**
+ * SessionMessageSchema
+ */
+export type SessionMessageSchema = {
+    id: string;
+    role: unknown;
+    content: string;
+    tool_call_id?: string | null;
+    tool_name?: string | null;
+    extra_data?: string | null;
+    session_id: string;
+    created_at: unknown;
+    updated_at: unknown;
+};
+
+/**
+ * SessionMessageUpdate
+ */
+export type SessionMessageUpdate = {
+    /**
+     * Message content
+     */
+    content?: string | null;
+    /**
+     * Additional metadata as JSON string
+     */
+    extradata?: string | null;
+};
+
+/**
  * SystemHealth
  */
 export type SystemHealth = {
@@ -107,7 +300,9 @@ export type TagModel = {
 export type TodoCreate = {
     item: string;
     description?: string | null;
-    plantime?: string | null;
+    alarmtime?: string | null;
+    starttime: string;
+    endtime: string;
     importance?: Importance;
     tags?: Array<string> | null;
 };
@@ -120,7 +315,9 @@ export type TodoModel = {
     item: string;
     description?: string | null;
     created_time: string;
-    plan_time?: string | null;
+    alarm_time?: string | null;
+    start_time: string;
+    end_time: string;
     importance: Importance;
     user_id: string;
     tags?: Array<string> | null;
@@ -568,35 +765,6 @@ export type RevokeUserRoleResponses = {
 
 export type RevokeUserRoleResponse = RevokeUserRoleResponses[keyof RevokeUserRoleResponses];
 
-export type AgentCreateTodoData = {
-    body: AgentTodoRequest;
-    path?: never;
-    query?: never;
-    url: '/todos/agent-create';
-};
-
-export type AgentCreateTodoErrors = {
-    /**
-     * Validation Exception
-     */
-    400: {
-        status_code: number;
-        detail: string;
-        extra?: null | Array<unknown> | Array<unknown>;
-    };
-};
-
-export type AgentCreateTodoError = AgentCreateTodoErrors[keyof AgentCreateTodoErrors];
-
-export type AgentCreateTodoResponses = {
-    /**
-     * Document created, URL follows
-     */
-    201: AgentTodoResponse;
-};
-
-export type AgentCreateTodoResponse = AgentCreateTodoResponses[keyof AgentCreateTodoResponses];
-
 export type CreateTagData = {
     body: TagCreate;
     path?: never;
@@ -912,6 +1080,699 @@ export type ListTagsResponses = {
 };
 
 export type ListTagsResponse = ListTagsResponses[keyof ListTagsResponses];
+
+export type AgentCreateTodoData = {
+    body: AgentTodoRequest;
+    path?: never;
+    query?: never;
+    url: '/api/todos/agent-create';
+};
+
+export type AgentCreateTodoErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        status_code: number;
+        detail: string;
+        extra?: null | Array<unknown> | Array<unknown>;
+    };
+};
+
+export type AgentCreateTodoError = AgentCreateTodoErrors[keyof AgentCreateTodoErrors];
+
+export type AgentCreateTodoResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: AgentTodoResponse;
+};
+
+export type AgentCreateTodoResponse = AgentCreateTodoResponses[keyof AgentCreateTodoResponses];
+
+export type ClearSessionHistoryData = {
+    body?: never;
+    path: {
+        session_id: string;
+    };
+    query?: never;
+    url: '/api/todos/agent-sessions/{session_id}';
+};
+
+export type ClearSessionHistoryErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        status_code: number;
+        detail: string;
+        extra?: null | Array<unknown> | Array<unknown>;
+    };
+};
+
+export type ClearSessionHistoryError = ClearSessionHistoryErrors[keyof ClearSessionHistoryErrors];
+
+export type ClearSessionHistoryResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type ClearSessionHistoryResponse = ClearSessionHistoryResponses[keyof ClearSessionHistoryResponses];
+
+export type GetSessionHistoryData = {
+    body?: never;
+    path: {
+        session_id: string;
+    };
+    query?: {
+        limit?: number;
+    };
+    url: '/api/todos/agent-sessions/{session_id}/history';
+};
+
+export type GetSessionHistoryErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        status_code: number;
+        detail: string;
+        extra?: null | Array<unknown> | Array<unknown>;
+    };
+};
+
+export type GetSessionHistoryError = GetSessionHistoryErrors[keyof GetSessionHistoryErrors];
+
+export type GetSessionHistoryResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type GetSessionHistoryResponse = GetSessionHistoryResponses[keyof GetSessionHistoryResponses];
+
+export type ListAgentSessionsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/todos/agent-sessions';
+};
+
+export type ListAgentSessionsResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type ListAgentSessionsResponse = ListAgentSessionsResponses[keyof ListAgentSessionsResponses];
+
+export type ActivateAgentSessionData = {
+    body?: never;
+    path: {
+        /**
+         * Session ID
+         * The agent session ID
+         */
+        session_id: string;
+    };
+    query: {
+        service: unknown;
+    };
+    url: '/api/agent-sessions/{session_id}/activate';
+};
+
+export type ActivateAgentSessionErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        status_code: number;
+        detail: string;
+        extra?: null | Array<unknown> | Array<unknown>;
+    };
+};
+
+export type ActivateAgentSessionError = ActivateAgentSessionErrors[keyof ActivateAgentSessionErrors];
+
+export type ActivateAgentSessionResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: AgentSessionSchema;
+};
+
+export type ActivateAgentSessionResponse = ActivateAgentSessionResponses[keyof ActivateAgentSessionResponses];
+
+export type AgentConversationData = {
+    body: SessionConversationRequest;
+    path?: never;
+    query?: never;
+    url: '/api/agent-sessions/conversation';
+};
+
+export type AgentConversationErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        status_code: number;
+        detail: string;
+        extra?: null | Array<unknown> | Array<unknown>;
+    };
+};
+
+export type AgentConversationError = AgentConversationErrors[keyof AgentConversationErrors];
+
+export type AgentConversationResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: SessionConversationResponse;
+};
+
+export type AgentConversationResponse = AgentConversationResponses[keyof AgentConversationResponses];
+
+export type ListAgentSessions2Data = {
+    body?: never;
+    path?: never;
+    query: {
+        service: unknown;
+        ids?: Array<string> | null;
+        createdBefore?: string | null;
+        createdAfter?: string | null;
+        updatedBefore?: string | null;
+        updatedAfter?: string | null;
+        /**
+         * Field to search
+         */
+        searchString?: string | null;
+        /**
+         * Search should be case sensitive
+         */
+        searchIgnoreCase?: boolean | null;
+        currentPage?: number;
+        pageSize?: number;
+        /**
+         * Order by field
+         */
+        orderBy?: string | null;
+        /**
+         * Field to search
+         */
+        sortOrder?: 'asc' | 'desc' | null;
+    };
+    url: '/api/agent-sessions';
+};
+
+export type ListAgentSessions2Errors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        status_code: number;
+        detail: string;
+        extra?: null | Array<unknown> | Array<unknown>;
+    };
+};
+
+export type ListAgentSessions2Error = ListAgentSessions2Errors[keyof ListAgentSessions2Errors];
+
+export type ListAgentSessions2Responses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: {
+        items?: Array<AgentSessionSchema>;
+        /**
+         * Maximal number of items to send.
+         */
+        limit?: number;
+        /**
+         * Offset from the beginning of the query.
+         */
+        offset?: number;
+        /**
+         * Total number of items.
+         */
+        total?: number;
+    };
+};
+
+export type ListAgentSessions2Response = ListAgentSessions2Responses[keyof ListAgentSessions2Responses];
+
+export type CreateAgentSessionData = {
+    body: AgentSessionCreate;
+    path?: never;
+    query: {
+        service: unknown;
+    };
+    url: '/api/agent-sessions';
+};
+
+export type CreateAgentSessionErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        status_code: number;
+        detail: string;
+        extra?: null | Array<unknown> | Array<unknown>;
+    };
+};
+
+export type CreateAgentSessionError = CreateAgentSessionErrors[keyof CreateAgentSessionErrors];
+
+export type CreateAgentSessionResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: AgentSessionSchema;
+};
+
+export type CreateAgentSessionResponse = CreateAgentSessionResponses[keyof CreateAgentSessionResponses];
+
+export type DeactivateAgentSessionData = {
+    body?: never;
+    path: {
+        /**
+         * Session ID
+         * The agent session ID
+         */
+        session_id: string;
+    };
+    query: {
+        service: unknown;
+    };
+    url: '/api/agent-sessions/{session_id}/deactivate';
+};
+
+export type DeactivateAgentSessionErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        status_code: number;
+        detail: string;
+        extra?: null | Array<unknown> | Array<unknown>;
+    };
+};
+
+export type DeactivateAgentSessionError = DeactivateAgentSessionErrors[keyof DeactivateAgentSessionErrors];
+
+export type DeactivateAgentSessionResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: AgentSessionSchema;
+};
+
+export type DeactivateAgentSessionResponse = DeactivateAgentSessionResponses[keyof DeactivateAgentSessionResponses];
+
+export type DeleteAgentSessionData = {
+    body?: never;
+    path: {
+        /**
+         * Session ID
+         * The agent session ID
+         */
+        session_id: string;
+    };
+    query: {
+        service: unknown;
+    };
+    url: '/api/agent-sessions/{session_id}';
+};
+
+export type DeleteAgentSessionErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        status_code: number;
+        detail: string;
+        extra?: null | Array<unknown> | Array<unknown>;
+    };
+};
+
+export type DeleteAgentSessionError = DeleteAgentSessionErrors[keyof DeleteAgentSessionErrors];
+
+export type DeleteAgentSessionResponses = {
+    /**
+     * Request fulfilled, nothing follows
+     */
+    204: void;
+};
+
+export type DeleteAgentSessionResponse = DeleteAgentSessionResponses[keyof DeleteAgentSessionResponses];
+
+export type GetAgentSessionData = {
+    body?: never;
+    path: {
+        /**
+         * Session ID
+         * The agent session ID
+         */
+        session_id: string;
+    };
+    query: {
+        service: unknown;
+    };
+    url: '/api/agent-sessions/{session_id}';
+};
+
+export type GetAgentSessionErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        status_code: number;
+        detail: string;
+        extra?: null | Array<unknown> | Array<unknown>;
+    };
+};
+
+export type GetAgentSessionError = GetAgentSessionErrors[keyof GetAgentSessionErrors];
+
+export type GetAgentSessionResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: AgentSessionSchema;
+};
+
+export type GetAgentSessionResponse = GetAgentSessionResponses[keyof GetAgentSessionResponses];
+
+export type UpdateAgentSessionData = {
+    body: AgentSessionUpdate;
+    path: {
+        /**
+         * Session ID
+         * The agent session ID
+         */
+        session_id: string;
+    };
+    query: {
+        service: unknown;
+    };
+    url: '/api/agent-sessions/{session_id}';
+};
+
+export type UpdateAgentSessionErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        status_code: number;
+        detail: string;
+        extra?: null | Array<unknown> | Array<unknown>;
+    };
+};
+
+export type UpdateAgentSessionError = UpdateAgentSessionErrors[keyof UpdateAgentSessionErrors];
+
+export type UpdateAgentSessionResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: AgentSessionSchema;
+};
+
+export type UpdateAgentSessionResponse = UpdateAgentSessionResponses[keyof UpdateAgentSessionResponses];
+
+export type ClearSessionMessagesData = {
+    body?: never;
+    path: {
+        /**
+         * Session ID
+         * The agent session ID
+         */
+        session_id: string;
+    };
+    query?: never;
+    url: '/api/agent-sessions/{session_id}/clear-messages';
+};
+
+export type ClearSessionMessagesErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        status_code: number;
+        detail: string;
+        extra?: null | Array<unknown> | Array<unknown>;
+    };
+};
+
+export type ClearSessionMessagesError = ClearSessionMessagesErrors[keyof ClearSessionMessagesErrors];
+
+export type ClearSessionMessagesResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: {
+        [key: string]: number;
+    };
+};
+
+export type ClearSessionMessagesResponse = ClearSessionMessagesResponses[keyof ClearSessionMessagesResponses];
+
+export type ListSessionMessagesData = {
+    body?: never;
+    path: {
+        /**
+         * Session ID
+         * The agent session ID
+         */
+        session_id: string;
+    };
+    query?: {
+        ids?: Array<string> | null;
+        createdBefore?: string | null;
+        createdAfter?: string | null;
+        updatedBefore?: string | null;
+        updatedAfter?: string | null;
+        /**
+         * Field to search
+         */
+        searchString?: string | null;
+        /**
+         * Search should be case sensitive
+         */
+        searchIgnoreCase?: boolean | null;
+        currentPage?: number;
+        pageSize?: number;
+        /**
+         * Order by field
+         */
+        orderBy?: string | null;
+        /**
+         * Field to search
+         */
+        sortOrder?: 'asc' | 'desc' | null;
+    };
+    url: '/api/agent-sessions/{session_id}/messages';
+};
+
+export type ListSessionMessagesErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        status_code: number;
+        detail: string;
+        extra?: null | Array<unknown> | Array<unknown>;
+    };
+};
+
+export type ListSessionMessagesError = ListSessionMessagesErrors[keyof ListSessionMessagesErrors];
+
+export type ListSessionMessagesResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: {
+        items?: Array<SessionMessageSchema>;
+        /**
+         * Maximal number of items to send.
+         */
+        limit?: number;
+        /**
+         * Offset from the beginning of the query.
+         */
+        offset?: number;
+        /**
+         * Total number of items.
+         */
+        total?: number;
+    };
+};
+
+export type ListSessionMessagesResponse = ListSessionMessagesResponses[keyof ListSessionMessagesResponses];
+
+export type CreateSessionMessageData = {
+    body: SessionMessageCreate;
+    path: {
+        /**
+         * Session ID
+         * The agent session ID
+         */
+        session_id: string;
+    };
+    query?: never;
+    url: '/api/agent-sessions/{session_id}/messages';
+};
+
+export type CreateSessionMessageErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        status_code: number;
+        detail: string;
+        extra?: null | Array<unknown> | Array<unknown>;
+    };
+};
+
+export type CreateSessionMessageError = CreateSessionMessageErrors[keyof CreateSessionMessageErrors];
+
+export type CreateSessionMessageResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: SessionMessageSchema;
+};
+
+export type CreateSessionMessageResponse = CreateSessionMessageResponses[keyof CreateSessionMessageResponses];
+
+export type DeleteSessionMessageData = {
+    body?: never;
+    path: {
+        /**
+         * Session ID
+         * The agent session ID
+         */
+        session_id: string;
+        /**
+         * Message ID
+         * The session message ID
+         */
+        message_id: string;
+    };
+    query?: never;
+    url: '/api/agent-sessions/{session_id}/messages/{message_id}';
+};
+
+export type DeleteSessionMessageErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        status_code: number;
+        detail: string;
+        extra?: null | Array<unknown> | Array<unknown>;
+    };
+};
+
+export type DeleteSessionMessageError = DeleteSessionMessageErrors[keyof DeleteSessionMessageErrors];
+
+export type DeleteSessionMessageResponses = {
+    /**
+     * Request fulfilled, nothing follows
+     */
+    204: void;
+};
+
+export type DeleteSessionMessageResponse = DeleteSessionMessageResponses[keyof DeleteSessionMessageResponses];
+
+export type GetSessionMessageData = {
+    body?: never;
+    path: {
+        /**
+         * Session ID
+         * The agent session ID
+         */
+        session_id: string;
+        /**
+         * Message ID
+         * The session message ID
+         */
+        message_id: string;
+    };
+    query?: never;
+    url: '/api/agent-sessions/{session_id}/messages/{message_id}';
+};
+
+export type GetSessionMessageErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        status_code: number;
+        detail: string;
+        extra?: null | Array<unknown> | Array<unknown>;
+    };
+};
+
+export type GetSessionMessageError = GetSessionMessageErrors[keyof GetSessionMessageErrors];
+
+export type GetSessionMessageResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: SessionMessageSchema;
+};
+
+export type GetSessionMessageResponse = GetSessionMessageResponses[keyof GetSessionMessageResponses];
+
+export type UpdateSessionMessageData = {
+    body: SessionMessageUpdate;
+    path: {
+        /**
+         * Session ID
+         * The agent session ID
+         */
+        session_id: string;
+        /**
+         * Message ID
+         * The session message ID
+         */
+        message_id: string;
+    };
+    query?: never;
+    url: '/api/agent-sessions/{session_id}/messages/{message_id}';
+};
+
+export type UpdateSessionMessageErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        status_code: number;
+        detail: string;
+        extra?: null | Array<unknown> | Array<unknown>;
+    };
+};
+
+export type UpdateSessionMessageError = UpdateSessionMessageErrors[keyof UpdateSessionMessageErrors];
+
+export type UpdateSessionMessageResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: SessionMessageSchema;
+};
+
+export type UpdateSessionMessageResponse = UpdateSessionMessageResponses[keyof UpdateSessionMessageResponses];
 
 export type ClientOptions = {
     baseURL: `${string}://${string}` | (string & {});
