@@ -39,19 +39,11 @@ export default function AIChatScreen() {
 
   const generateAIResponse = async (userMessage: string): Promise<string> => {
     try {
-      // Prepare the messages array for the agent
-      const messagesForAgent = messages
-        .filter(msg => msg.id !== '1') // Exclude the initial greeting
-        .map(msg => ({
-          role: msg.isUser ? 'user' : 'assistant',
-          content: msg.text
-        }));
-
-      // Add the current user message
-      messagesForAgent.push({
+      // Send only the current user message instead of entire conversation history
+      const messagesForAgent = [{
         role: 'user',
         content: userMessage
-      });
+      }];
 
       const conversationRequest: SessionConversationRequest = {
         messages: messagesForAgent,
@@ -244,9 +236,12 @@ export default function AIChatScreen() {
             placeholder="Type your message..."
             value={inputText}
             onChangeText={setInputText}
+            onSubmitEditing={sendMessage}
             multiline
             maxLength={500}
             editable={!isLoading}
+            blurOnSubmit={false}
+            returnKeyType="send"
           />
           <TouchableOpacity
             onPress={sendMessage}
