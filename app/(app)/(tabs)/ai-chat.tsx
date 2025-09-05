@@ -1,4 +1,4 @@
-import { agentCreateTodo, AgentCreateTodoData, AgentTodoRequest } from '@/client';
+import { agentConversation, AgentConversationData, SessionConversationRequest } from '@/client';
 import { Input } from '@/components/ui/input';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useEffect, useRef, useState } from 'react';
@@ -33,6 +33,7 @@ export default function AIChatScreen() {
   ]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
 
 
@@ -43,47 +44,40 @@ export default function AIChatScreen() {
         .filter(msg => msg.id !== '1') // Exclude the initial greeting
         .map(msg => ({
           role: msg.isUser ? 'user' : 'assistant',
-          content: msg.text,
-          // timestamp: msg.timestamp.toISOString(),
+          content: msg.text
         }));
 
       // Add the current user message
       messagesForAgent.push({
         role: 'user',
-        content: userMessage,
-        // timestamp: new Date().toISOString(),
+        content: userMessage
       });
 
-      const agentRequest: AgentTodoRequest = {
+      const conversationRequest: SessionConversationRequest = {
         messages: messagesForAgent,
+        session_id: sessionId,
+        session_name: sessionId ? undefined : 'AI Chat Session',
       };
 
-      const agentData: AgentCreateTodoData = {
-        body: agentRequest,
-        url: '/todos/agent-create',
+      const agentData: AgentConversationData = {
+        body: conversationRequest,
+        url: '/api/agent-sessions/conversation',
       };
 
-      const response = await agentCreateTodo(agentData);
+      const response = await agentConversation(agentData);
 
-      if (response.data && response.data.message) {
-        return response.data.message;
-      } else if (response.data && response.data.agent_response && response.data.agent_response.length > 0) {
-        // If there's an agent_response array, try to extract a message from it
-        const agentResponseContent = response.data.agent_response[0];
-        if (typeof agentResponseContent === 'object' && agentResponseContent !== null) {
-          // Try to find a message or content field
-          const content = (agentResponseContent as any).content ||
-            (agentResponseContent as any).message ||
-            (agentResponseContent as any).text ||
-            JSON.stringify(agentResponseContent);
-          return typeof content === 'string' ? content : 'I received your message but had trouble formatting the response.';
+      if (response.data) {
+        // Update session ID if this is a new session
+        if (!sessionId && response.data.session_id) {
+          setSessionId(response.data.session_id);
         }
-        return 'I processed your request successfully.';
+
+        return response.data.response || 'I received your message but didn\'t get a proper response.';
       } else {
         return 'I received your message but didn\'t get a proper response from the AI service.';
       }
     } catch (error) {
-      console.error('Error calling agentCreateTodo:', error);
+      console.error('Error calling agentConversation:', error);
       // Fallback to a simple response
       return 'I\'m sorry, I\'m having trouble connecting to the AI service right now. Please try again later.';
     }
@@ -92,9 +86,13 @@ export default function AIChatScreen() {
   const sendMessage = async () => {
     if (!inputText.trim() || isLoading) return;
 
+    const cleanText = inputText.trim();
+    const textWithTimezone = cleanText + ' (sent at timezone: ' + Intl.DateTimeFormat().resolvedOptions().timeZone + ')';
+
+    // Create message for display (without timezone info)
     const userMessage: Message = {
       id: Date.now().toString(),
-      text: inputText.trim() + ' (sent at timezone: ' + Intl.DateTimeFormat().resolvedOptions().timeZone + ')',
+      text: cleanText,
       isUser: true,
       timestamp: new Date(),
     };
@@ -104,7 +102,8 @@ export default function AIChatScreen() {
     setIsLoading(true);
 
     try {
-      const aiResponse = await generateAIResponse(userMessage.text);
+      // Send the message with timezone info to the AI
+      const aiResponse = await generateAIResponse(textWithTimezone);
 
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -122,25 +121,48 @@ export default function AIChatScreen() {
     }
   };
 
+  // Direct clear function for testing
+  const directClearChat = () => {
+    console.log('Direct clear chat pressed');
+    setMessages([{
+      id: '1',
+      text: 'Hello! I\'m your AI assistant. How can I help you today?',
+      isUser: false,
+      timestamp: new Date(),
+    }]);
+    setSessionId(null);
+    console.log('Direct clear completed');
+  };
+
   const clearChat = () => {
+    console.log('Clear chat button pressed'); // Debug log
+
     Alert.alert(
       'Clear Chat',
       'Are you sure you want to clear all messages?',
       [
-        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+          onPress: () => console.log('Clear chat cancelled')
+        },
         {
           text: 'Clear',
           style: 'destructive',
           onPress: () => {
+            console.log('Clearing chat messages'); // Debug log
             setMessages([{
               id: '1',
               text: 'Hello! I\'m your AI assistant. How can I help you today?',
               isUser: false,
               timestamp: new Date(),
             }]);
+            setSessionId(null); // Reset session ID for a new conversation
+            console.log('Chat cleared successfully'); // Debug log
           },
         },
-      ]
+      ],
+      { cancelable: true } // Make sure the alert can be dismissed
     );
   };
 
@@ -187,9 +209,14 @@ export default function AIChatScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>AI Assistant</Text>
-          <TouchableOpacity onPress={clearChat} style={styles.clearButton}>
-            <Ionicons name="trash-outline" size={24} color="#FF3B30" />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <TouchableOpacity onPress={directClearChat} style={styles.clearButton}>
+              <Ionicons name="refresh-outline" size={24} color="#007AFF" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={clearChat} style={styles.clearButton}>
+              <Ionicons name="trash-outline" size={24} color="#FF3B30" />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Messages */}

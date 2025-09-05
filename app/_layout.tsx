@@ -74,7 +74,7 @@ export default function RootLayout() {
 
   client.setConfig({
     auth: () => getToken(),
-    baseURL: "http://192.168.1.106:8089",
+    baseURL: "http://127.0.0.1:8089",
   });
 
   return (

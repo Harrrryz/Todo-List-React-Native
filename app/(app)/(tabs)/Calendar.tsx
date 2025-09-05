@@ -50,7 +50,7 @@ const CalendarScreen = () => {
 
     todoList.forEach(todo => {
       // Extract only the date part (YYYY-MM-DD) from the full timestamp
-      const datePart = dayjs(todo.plan_time).format('YYYY-MM-DD');
+      const datePart = dayjs(todo.start_time).format('YYYY-MM-DD');
       console.log(`Marking date: ${datePart} for todo: ${todo.item}`);
       if (!datePart) return;
       marks[datePart] = { marked: true, dotColor: '#5092D8' };
@@ -71,7 +71,7 @@ const CalendarScreen = () => {
   // Memoize the filtered list of todos for the selected date
   const todosForSelectedDate = useMemo(() => {
     // Filter by comparing only the date part of the timestamp
-    return todoList.filter(todo => dayjs(todo.plan_time).format('YYYY-MM-DD') === selectedDate);
+    return todoList.filter(todo => dayjs(todo.start_time).format('YYYY-MM-DD') === selectedDate);
   }, [todoList, selectedDate]);
 
   const onDayPress = (day: DateData) => {

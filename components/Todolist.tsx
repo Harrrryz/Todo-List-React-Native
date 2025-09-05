@@ -96,7 +96,7 @@ const TodoItem: React.FC<{ item: TodoModel; onDelete: (id: string) => void }> = 
                 {item.item}
               </Text>
               <Text style={styles.itemDueDate}>
-                {item.plan_time ? dayjs(item.plan_time).format('YYYY-MM-DD HH:mm') : 'No due date'}
+                {item.start_time ? dayjs(item.start_time).format('YYYY-MM-DD HH:mm') : 'No due date'}
               </Text>
             </TouchableOpacity>
           </Link>
