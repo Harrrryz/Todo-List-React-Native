@@ -5,6 +5,7 @@ import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { Calendar, DateData } from 'react-native-calendars';
 
 import { listTodos, TodoModel } from '@/client'; // Adjust the import path as necessary
+import { useTodoRefresh } from '@/components/TodoRefreshContext';
 import dayjs from 'dayjs';
 // Helper to get today's date in 'YYYY-MM-DD' format
 const getTodayDateString = () => new Date().toISOString().split('T')[0];
@@ -24,6 +25,7 @@ const TodoItem: React.FC<{ item: TodoModel }> = ({ item }) => (
 );
 
 const CalendarScreen = () => {
+  const { refreshKey } = useTodoRefresh();
   const [selectedDate, setSelectedDate] = useState<string>(getTodayDateString());
   // Calculate the initial date only once to avoid re-calculating on every render
   const [initialDate] = useState(getTodayDateString());
@@ -42,7 +44,7 @@ const CalendarScreen = () => {
     };
 
     fetchTodos();
-  }, []);
+  }, [refreshKey]); // Added refreshKey dependency to refetch when todos are updated
 
   // Memoize the marked dates to prevent recalculation on every render
   const markedDates = useMemo(() => {

@@ -2,6 +2,7 @@
 
 import { accountProfile, listTodos, TodoModel, User } from '@/client';
 import { useSession } from '@/components/ctx';
+import { useTodoRefresh } from '@/components/TodoRefreshContext';
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -22,6 +23,7 @@ import * as ImagePicker from 'expo-image-picker';
 // --- Main Account Screen Component ---
 const AccountScreen = () => {
   const { signOut } = useSession();
+  const { refreshKey } = useTodoRefresh();
 
   // --- State for the avatar image URI ---
   const [avatarUri, setAvatarUri] = useState('https://via.placeholder.com/100');
@@ -92,6 +94,23 @@ const AccountScreen = () => {
       };
     }, [])
   );
+
+  // Update todo list when refresh is triggered from other components
+  useEffect(() => {
+    const fetchTodos = async () => {
+      try {
+        console.log('Refreshing todos due to context refresh...');
+        const todos = await listTodos();
+        setTodoList(todos.data?.items || []);
+      } catch (error) {
+        console.error("Failed to refresh todos:", error);
+      }
+    };
+
+    if (refreshKey > 0) { // Only fetch if refreshKey has been triggered
+      fetchTodos();
+    }
+  }, [refreshKey]);
 
   const totalTasks = todoList.length;
 

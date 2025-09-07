@@ -127,6 +127,7 @@ const RecentTodoList: React.FC<RecentTodoListProps> = ({ refetchKey, showSearchI
   // Move fetchAndSetTodos outside useEffect so it can be reused
   const fetchAndSetTodos = async () => {
     try {
+      console.log('Fetching todos...');
       setIsLoading(true);
       const result = await listTodos();
       const items = result.data?.items || [];

@@ -1,4 +1,5 @@
 import { agentConversation, AgentConversationData, SessionConversationRequest } from '@/client';
+import { useTodoRefresh } from '@/components/TodoRefreshContext';
 import { Input } from '@/components/ui/input';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useEffect, useRef, useState } from 'react';
@@ -23,6 +24,7 @@ interface Message {
 }
 
 export default function AIChatScreen() {
+  const { triggerRefresh } = useTodoRefresh();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -105,6 +107,10 @@ export default function AIChatScreen() {
       };
 
       setMessages(prev => [...prev, aiMessage]);
+
+      // Always trigger todo refresh after AI response
+      console.log('AI Chat: Triggering todo refresh after AI response');
+      triggerRefresh();
     } catch (error) {
       console.error('Error generating AI response:', error);
       Alert.alert('Error', 'Failed to get AI response. Please try again.');

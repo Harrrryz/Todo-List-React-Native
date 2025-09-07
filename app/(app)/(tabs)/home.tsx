@@ -5,11 +5,12 @@ import { createTodo } from '@/client/sdk.gen';
 import FilterButtons from '@/components/FilterButtons';
 import LeftSidebar from '@/components/LeftSidebar';
 import TodoList from '@/components/Todolist';
+import { useTodoRefresh } from '@/components/TodoRefreshContext';
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 const TodoListScreen = () => {
-
+  const { refreshKey, triggerRefresh } = useTodoRefresh();
   const [addTodoRefactorKey, setAddTodoRefactorKey] = useState(0);
   const [showSearchInput, setShowSearchInput] = useState(false);
 
@@ -41,7 +42,7 @@ const TodoListScreen = () => {
         <FilterButtons />
 
         {/* Part 3: Bottom Right Todo List */}
-        <TodoList refetchKey={addTodoRefactorKey} showSearchInput={showSearchInput} />
+        <TodoList refetchKey={addTodoRefactorKey + refreshKey} showSearchInput={showSearchInput} />
       </View>
     </View>
   );
