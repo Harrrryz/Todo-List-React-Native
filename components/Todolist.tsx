@@ -21,11 +21,24 @@ import { Input } from './ui/input';
  * Helper function to filter todos based on the selected period
  */
 const filterTodosByPeriod = (todos: TodoModel[], period: FilterPeriod): TodoModel[] => {
-  if (period === 'all') {
-    return todos;
+  const now = dayjs();
+
+  if (period === 'history') {
+    // Show todos where end_time is in the past
+    return todos.filter(todo => {
+      const todoEndTime = dayjs(todo.end_time);
+      return todoEndTime.isBefore(now);
+    });
   }
 
-  const now = dayjs();
+  if (period === 'active') {
+    // Show todos where end_time is not in the past (current and future todos)
+    return todos.filter(todo => {
+      const todoEndTime = dayjs(todo.end_time);
+      return todoEndTime.isAfter(now) || todoEndTime.isSame(now, 'day');
+    });
+  }
+
   let endDate: dayjs.Dayjs;
 
   switch (period) {
@@ -43,7 +56,16 @@ const filterTodosByPeriod = (todos: TodoModel[], period: FilterPeriod): TodoMode
   }
 
   return todos.filter(todo => {
-    // Filter based on start_time (when the todo is scheduled to start)
+    const todoEndTime = dayjs(todo.end_time);
+    // For time-based filters, show active todos within the specified period
+    // Active todos are those where end_time is not in the past
+    const isActive = todoEndTime.isAfter(now) || todoEndTime.isSame(now, 'day');
+
+    if (!isActive) {
+      return false; // Don't show past todos in time-based filters
+    }
+
+    // Filter based on start_time for the time period (when the todo is scheduled to start)
     const todoStartTime = dayjs(todo.start_time);
     // Show todos from now until the specified future period
     return todoStartTime.isAfter(now) && (todoStartTime.isBefore(endDate) || todoStartTime.isSame(endDate, 'day'));
@@ -130,7 +152,8 @@ const TodoItem: React.FC<{ item: TodoModel; onDelete: (id: string) => void }> = 
                 {item.item}
               </Text>
               <Text style={styles.itemDueDate}>
-                {item.start_time ? dayjs(item.start_time).format('YYYY-MM-DD HH:mm') : 'No due date'}
+                {item.start_time ? `Start: ${dayjs(item.start_time).format('YYYY-MM-DD HH:mm')}` : 'No start date'}
+                {item.end_time ? ` | End: ${dayjs(item.end_time).format('YYYY-MM-DD HH:mm')}` : ''}
               </Text>
             </TouchableOpacity>
           </Link>

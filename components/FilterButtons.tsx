@@ -28,9 +28,14 @@ const FilterButtons = () => {
   return (
     <View style={styles.container}>
       <TouchableOpacity
-        style={getButtonStyle('all')}
-        onPress={() => handleFilter('all')}>
-        <Text style={getButtonTextStyle('all')}>All</Text>
+        style={getButtonStyle('active')}
+        onPress={() => handleFilter('active')}>
+        <Text style={getButtonTextStyle('active')}>Active</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={getButtonStyle('history')}
+        onPress={() => handleFilter('history')}>
+        <Text style={getButtonTextStyle('history')}>History</Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={getButtonStyle('1day')}
@@ -66,7 +71,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 8,
-    marginHorizontal: 3,
+    marginHorizontal: 2, // Reduced margin to accommodate 5 buttons
     paddingVertical: 10,
     borderWidth: 1,
     borderColor: '#D0D0D0',
@@ -78,7 +83,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#666666',
     fontWeight: 'bold',
-    fontSize: 12,
+    fontSize: 11, // Slightly smaller font to fit 5 buttons
   },
   activeButtonText: {
     color: '#FFFFFF',

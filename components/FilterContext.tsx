@@ -1,6 +1,6 @@
 import React, { createContext, ReactNode, useContext, useState } from 'react';
 
-export type FilterPeriod = 'all' | '1day' | '1week' | '1month';
+export type FilterPeriod = 'active' | 'history' | '1day' | '1week' | '1month';
 
 interface FilterContextType {
   selectedPeriod: FilterPeriod;
@@ -14,7 +14,7 @@ interface FilterProviderProps {
 }
 
 export const FilterProvider: React.FC<FilterProviderProps> = ({ children }) => {
-  const [selectedPeriod, setSelectedPeriod] = useState<FilterPeriod>('all');
+  const [selectedPeriod, setSelectedPeriod] = useState<FilterPeriod>('active');
 
   const contextValue: FilterContextType = {
     selectedPeriod,
