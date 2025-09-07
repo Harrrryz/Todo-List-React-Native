@@ -14,7 +14,41 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { useDebounce } from 'use-debounce';
+import { FilterPeriod, useFilter } from './FilterContext';
 import { Input } from './ui/input';
+
+/**
+ * Helper function to filter todos based on the selected period
+ */
+const filterTodosByPeriod = (todos: TodoModel[], period: FilterPeriod): TodoModel[] => {
+  if (period === 'all') {
+    return todos;
+  }
+
+  const now = dayjs();
+  let endDate: dayjs.Dayjs;
+
+  switch (period) {
+    case '1day':
+      endDate = now.add(1, 'day');
+      break;
+    case '1week':
+      endDate = now.add(1, 'week');
+      break;
+    case '1month':
+      endDate = now.add(1, 'month');
+      break;
+    default:
+      return todos;
+  }
+
+  return todos.filter(todo => {
+    // Filter based on start_time (when the todo is scheduled to start)
+    const todoStartTime = dayjs(todo.start_time);
+    // Show todos from now until the specified future period
+    return todoStartTime.isAfter(now) && (todoStartTime.isBefore(endDate) || todoStartTime.isSame(endDate, 'day'));
+  });
+};
 
 /**
  * Renders a single todo item in the list with swipe-to-delete functionality.
@@ -118,11 +152,13 @@ interface RecentTodoListProps {
 const RecentTodoList: React.FC<RecentTodoListProps> = ({ refetchKey, showSearchInput }) => {
   // State hooks must be called inside the component
   const [todos, setTodos] = useState<TodoModel[]>([]);
+  const [allTodos, setAllTodos] = useState<TodoModel[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [searchText, setSearchText] = useState<string>(''); // State for search input
   const [debouncedSearchText] = useDebounce(searchText, 1000);
   const inputRef = useRef<any>(null);
+  const { selectedPeriod } = useFilter();
 
   // Move fetchAndSetTodos outside useEffect so it can be reused
   const fetchAndSetTodos = async () => {
@@ -131,7 +167,10 @@ const RecentTodoList: React.FC<RecentTodoListProps> = ({ refetchKey, showSearchI
       setIsLoading(true);
       const result = await listTodos();
       const items = result.data?.items || [];
-      setTodos(items);
+      setAllTodos(items); // Store all todos
+      // Apply current filter
+      const filteredItems = filterTodosByPeriod(items, selectedPeriod);
+      setTodos(filteredItems);
     } catch (e) {
       console.error('Failed to fetch todos:', e);
       setError('Failed to load todos. Please try again later.');
@@ -149,7 +188,10 @@ const RecentTodoList: React.FC<RecentTodoListProps> = ({ refetchKey, showSearchI
       try {
         const result = await listTodos(data);
         const items = result.data?.items || [];
-        setTodos(items);
+        setAllTodos(items); // Store all search results
+        // Apply current filter to search results
+        const filteredItems = filterTodosByPeriod(items, selectedPeriod);
+        setTodos(filteredItems);
         if (inputRef.current) {
           inputRef.current.blur(); // Optionally blur the input after search
         }
@@ -168,6 +210,12 @@ const RecentTodoList: React.FC<RecentTodoListProps> = ({ refetchKey, showSearchI
     searchTodos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearchText]);
+
+  // Filter todos when selectedPeriod changes
+  useEffect(() => {
+    const filteredItems = filterTodosByPeriod(allTodos, selectedPeriod);
+    setTodos(filteredItems);
+  }, [selectedPeriod, allTodos]);
 
   /**
    * Handles the deletion of a todo item.

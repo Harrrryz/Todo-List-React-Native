@@ -3,6 +3,7 @@
 import { CreateTodoData } from '@/client';
 import { createTodo } from '@/client/sdk.gen';
 import FilterButtons from '@/components/FilterButtons';
+import { FilterProvider } from '@/components/FilterContext';
 import LeftSidebar from '@/components/LeftSidebar';
 import TodoList from '@/components/Todolist';
 import { useTodoRefresh } from '@/components/TodoRefreshContext';
@@ -32,19 +33,21 @@ const TodoListScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Part 1: Left Sidebar */}
-      <LeftSidebar onAdd={handleAddTodo} onSearch={handleSearch} />
+    <FilterProvider>
+      <View style={styles.container}>
+        {/* Part 1: Left Sidebar */}
+        <LeftSidebar onAdd={handleAddTodo} onSearch={handleSearch} />
 
-      {/* This View holds the right side content */}
-      <View style={styles.mainContent}>
-        {/* Part 2: Top Right Filter Buttons */}
-        <FilterButtons />
+        {/* This View holds the right side content */}
+        <View style={styles.mainContent}>
+          {/* Part 2: Top Right Filter Buttons */}
+          <FilterButtons />
 
-        {/* Part 3: Bottom Right Todo List */}
-        <TodoList refetchKey={addTodoRefactorKey + refreshKey} showSearchInput={showSearchInput} />
+          {/* Part 3: Bottom Right Todo List */}
+          <TodoList refetchKey={addTodoRefactorKey + refreshKey} showSearchInput={showSearchInput} />
+        </View>
       </View>
-    </View>
+    </FilterProvider>
   );
 };
 

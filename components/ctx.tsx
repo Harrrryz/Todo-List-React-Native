@@ -96,6 +96,8 @@ export function SessionProvider({ children }: PropsWithChildren) {
         signIn,
         signOut: () => {
           setSession(null);
+          // Force a redirect to sign-in after clearing session
+          router.replace('/sign-in');
         },
         session,
         isLoading,
