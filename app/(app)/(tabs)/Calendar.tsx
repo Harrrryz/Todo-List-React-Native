@@ -1,35 +1,69 @@
 // src/screens/CalendarScreen.tsx
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
-import { Calendar, DateData } from 'react-native-calendars';
-
-import { listTodos, TodoModel } from '@/client'; // Adjust the import path as necessary
+import { listTodos, TodoModel } from '@/client';
 import { useTodoRefresh } from '@/components/TodoRefreshContext';
 import dayjs from 'dayjs';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, StyleSheet, View } from 'react-native';
+import {
+  CalendarProvider,
+  CalendarUtils,
+  ExpandableCalendar,
+  TimelineEventProps,
+  TimelineList
+} from 'react-native-calendars';
+
 // Helper to get today's date in 'YYYY-MM-DD' format
 const getTodayDateString = () => new Date().toISOString().split('T')[0];
 
+const INITIAL_TIME = { hour: 9, minutes: 0 };
+
+// Simple groupBy implementation
+const groupBy = <T,>(array: T[], keyFn: (item: T) => string): { [key: string]: T[] } => {
+  return array.reduce((result, item) => {
+    const key = keyFn(item);
+    if (!result[key]) {
+      result[key] = [];
+    }
+    result[key].push(item);
+    return result;
+  }, {} as { [key: string]: T[] });
+};
 
 
-// A reusable TodoItem component, without completion styling.
-const TodoItem: React.FC<{ item: TodoModel }> = ({ item }) => (
-  <View style={styles.itemContainer}>
-    <View style={styles.itemTextContainer}>
-      {/* FIX: Removed unconditional strikethrough style. All items display as active. */}
-      <Text style={styles.itemTitle}>
-        {item.item}
-      </Text>
-    </View>
-  </View>
-);
+
+// Transform TodoModel to TimelineEventProps
+const transformTodoToTimelineEvent = (todo: TodoModel): TimelineEventProps => {
+  // Parse start and end times
+  const startTime = dayjs(todo.start_time);
+  const endTime = dayjs(todo.end_time);
+
+  // Generate color based on importance
+  const getColorByImportance = (importance: string) => {
+    switch (importance) {
+      case 'high': return '#FF6B6B';
+      case 'medium': return '#4ECDC4';
+      case 'low': return '#45B7D1';
+      default: return '#95A5A6';
+    }
+  };
+
+  return {
+    start: todo.start_time,
+    end: todo.end_time,
+    title: todo.item,
+    summary: todo.description || '',
+    color: getColorByImportance(todo.importance),
+    id: todo.id,
+  };
+};
 
 const CalendarScreen = () => {
   const { refreshKey } = useTodoRefresh();
-  const [selectedDate, setSelectedDate] = useState<string>(getTodayDateString());
-  // Calculate the initial date only once to avoid re-calculating on every render
-  const [initialDate] = useState(getTodayDateString());
+  const [currentDate, setCurrentDate] = useState<string>(getTodayDateString());
   const [todoList, setTodoList] = useState<TodoModel[]>([]);
+  const [events, setEvents] = useState<TimelineEventProps[]>([]);
+  const [eventsByDate, setEventsByDate] = useState<{ [key: string]: TimelineEventProps[] }>({});
 
   useEffect(() => {
     const fetchTodos = async () => {
@@ -38,13 +72,23 @@ const CalendarScreen = () => {
         const response = await listTodos();
         const items = response.data?.items || [];
         setTodoList(items);
+
+        // Transform todos to timeline events
+        const timelineEvents = items.map(transformTodoToTimelineEvent);
+        setEvents(timelineEvents);
+
+        // Group events by date for timeline
+        const groupedEvents = groupBy(timelineEvents, (event) =>
+          CalendarUtils.getCalendarDateString(event.start)
+        );
+        setEventsByDate(groupedEvents);
       } catch (error) {
         console.error('Failed to fetch todos:', error);
       }
     };
 
     fetchTodos();
-  }, [refreshKey]); // Added refreshKey dependency to refetch when todos are updated
+  }, [refreshKey]);
 
   // Memoize the marked dates to prevent recalculation on every render
   const markedDates = useMemo(() => {
@@ -53,63 +97,141 @@ const CalendarScreen = () => {
     todoList.forEach(todo => {
       // Extract only the date part (YYYY-MM-DD) from the full timestamp
       const datePart = dayjs(todo.start_time).format('YYYY-MM-DD');
-      console.log(`Marking date: ${datePart} for todo: ${todo.item}`);
       if (!datePart) return;
       marks[datePart] = { marked: true, dotColor: '#5092D8' };
     });
 
+    return marks;
+  }, [todoList]);
 
-    // Add selected date styling
-    marks[selectedDate] = {
-      ...marks[selectedDate],
-      selected: true,
-      selectedColor: '#4A90E2',
-      selectedTextColor: 'white',
+  // Date change handlers
+  const onDateChanged = (date: string, source: string) => {
+    console.log('TimelineCalendarScreen onDateChanged: ', date, source);
+    setCurrentDate(date);
+  };
+
+  const onMonthChange = (month: any, updateSource: any) => {
+    console.log('TimelineCalendarScreen onMonthChange: ', month, updateSource);
+  };
+
+  // Event handlers
+  const onEventPress = (event: TimelineEventProps) => {
+    Alert.alert(
+      event.title,
+      event.summary || 'No description available',
+      [
+        { text: 'OK', style: 'default' }
+      ]
+    );
+  };
+
+  const createNewEvent = (timeString: string, timeObject: any) => {
+    const hourString = `${(timeObject.hour + 1).toString().padStart(2, '0')}`;
+    const minutesString = `${timeObject.minutes.toString().padStart(2, '0')}`;
+
+    const newEvent: TimelineEventProps = {
+      id: 'draft',
+      start: `${timeString}`,
+      end: `${timeObject.date} ${hourString}:${minutesString}:00`,
+      title: 'New Todo',
+      color: '#95A5A6'
     };
 
-    return marks;
-  }, [todoList, selectedDate]);
+    if (timeObject.date) {
+      const updatedEventsByDate = { ...eventsByDate };
+      if (updatedEventsByDate[timeObject.date]) {
+        updatedEventsByDate[timeObject.date] = [...updatedEventsByDate[timeObject.date], newEvent];
+      } else {
+        updatedEventsByDate[timeObject.date] = [newEvent];
+      }
+      setEventsByDate(updatedEventsByDate);
+    }
+  };
 
-  // Memoize the filtered list of todos for the selected date
-  const todosForSelectedDate = useMemo(() => {
-    // Filter by comparing only the date part of the timestamp
-    return todoList.filter(todo => dayjs(todo.start_time).format('YYYY-MM-DD') === selectedDate);
-  }, [todoList, selectedDate]);
+  const approveNewEvent = (_timeString: string, timeObject: any) => {
+    Alert.prompt(
+      'New Todo',
+      'Enter todo title',
+      [
+        {
+          text: 'Cancel',
+          onPress: () => {
+            if (timeObject.date && eventsByDate[timeObject.date]) {
+              const updatedEventsByDate = { ...eventsByDate };
+              updatedEventsByDate[timeObject.date] = eventsByDate[timeObject.date].filter(
+                e => e.id !== 'draft'
+              );
+              setEventsByDate(updatedEventsByDate);
+            }
+          }
+        },
+        {
+          text: 'Create',
+          onPress: (eventTitle) => {
+            if (timeObject.date && eventsByDate[timeObject.date]) {
+              const updatedEventsByDate = { ...eventsByDate };
+              const draftEvent = eventsByDate[timeObject.date].find(e => e.id === 'draft');
+              if (draftEvent) {
+                draftEvent.id = `new-${Date.now()}`;
+                draftEvent.title = eventTitle || 'New Todo';
+                draftEvent.color = '#4ECDC4';
+                updatedEventsByDate[timeObject.date] = [...eventsByDate[timeObject.date]];
+                setEventsByDate(updatedEventsByDate);
+              }
+            }
+          }
+        }
+      ]
+    );
+  };
 
-  const onDayPress = (day: DateData) => {
-    setSelectedDate(day.dateString);
+  // Timeline props configuration
+  const timelineProps = {
+    format24h: true,
+    onBackgroundLongPress: createNewEvent,
+    onBackgroundLongPressOut: approveNewEvent,
+    scrollToFirst: true,
+    start: 6,
+    end: 22,
+    unavailableHours: [{ start: 0, end: 6 }, { start: 22, end: 24 }],
+    overlapEventsSpacing: 8,
+    rightEdgeSpacing: 24
   };
 
   return (
     <View style={styles.container}>
-      <Calendar
-        onDayPress={onDayPress}
-        markedDates={markedDates}
-        current={initialDate}
-        theme={{
-          backgroundColor: '#ffffff',
-          calendarBackground: '#ffffff',
-          textSectionTitleColor: '#b6c1cd',
-          selectedDayBackgroundColor: '#4A90E2',
-          selectedDayTextColor: '#ffffff',
-          todayTextColor: '#4A90E2',
-          dayTextColor: '#2d4150',
-          arrowColor: '#4A90E2',
-        }}
-      />
-      <View style={styles.todoListContainer}>
-        <Text style={styles.listTitle}>Todos for {selectedDate}</Text>
-        <FlatList
-          data={todosForSelectedDate}
-          renderItem={({ item }) => <TodoItem item={item} />}
-          keyExtractor={item => item.id}
-          ListEmptyComponent={
-            <View style={styles.emptyListContainer}>
-              <Text style={styles.emptyListText}>No todos for this day. Enjoy!</Text>
-            </View>
-          }
+      <CalendarProvider
+        date={currentDate}
+        onDateChanged={onDateChanged}
+        onMonthChange={onMonthChange}
+        showTodayButton
+        disabledOpacity={0.6}
+      >
+        <ExpandableCalendar
+          firstDay={1}
+          markedDates={markedDates}
+          theme={{
+            backgroundColor: '#ffffff',
+            calendarBackground: '#ffffff',
+            textSectionTitleColor: '#b6c1cd',
+            selectedDayBackgroundColor: '#4A90E2',
+            selectedDayTextColor: '#ffffff',
+            todayTextColor: '#4A90E2',
+            dayTextColor: '#2d4150',
+            arrowColor: '#4A90E2',
+          }}
         />
-      </View>
+        <TimelineList
+          events={eventsByDate}
+          timelineProps={{
+            ...timelineProps,
+            onEventPress: onEventPress
+          }}
+          showNowIndicator
+          scrollToFirst
+          initialTime={INITIAL_TIME}
+        />
+      </CalendarProvider>
     </View>
   );
 };
@@ -118,43 +240,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F7FA',
-  },
-  todoListContainer: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-  listTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    color: '#333',
-  },
-  itemContainer: {
-    backgroundColor: '#FFFFFF',
-    padding: 15,
-    borderRadius: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  itemTextContainer: {
-    flex: 1,
-  },
-  itemTitle: {
-    fontSize: 16,
-    color: '#333',
-  },
-  // FIX: Removed unused 'completedText' style
-  emptyListContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 50,
-  },
-  emptyListText: {
-    fontSize: 16,
-    color: '#999',
   },
 });
 
