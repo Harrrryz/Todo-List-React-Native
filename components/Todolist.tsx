@@ -2,7 +2,7 @@ import { deleteTodo, DeleteTodoData, listTodos, ListTodosData, TodoModel } from 
 import dayjs from 'dayjs';
 import { Link } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View, VirtualizedList } from 'react-native';
 import { PanGestureHandler } from 'react-native-gesture-handler';
 import Animated, {
   Extrapolate,
@@ -183,54 +183,92 @@ const RecentTodoList: React.FC<RecentTodoListProps> = ({ refetchKey, showSearchI
   const inputRef = useRef<any>(null);
   const { selectedPeriod } = useFilter();
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [hasNextPage, setHasNextPage] = useState<boolean>(true);
+  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
+  const [totalItems, setTotalItems] = useState<number>(0);
+  const PAGE_SIZE = 5;
+
   // Move fetchAndSetTodos outside useEffect so it can be reused
-  const fetchAndSetTodos = async () => {
+  const fetchAndSetTodos = async (page: number = 1, resetData: boolean = true) => {
     try {
-      console.log('Fetching todos...');
-      setIsLoading(true);
-      const result = await listTodos();
+      console.log(`Fetching todos page ${page}...`);
+      if (resetData) {
+        setIsLoading(true);
+        setCurrentPage(1);
+        setTodos([]);
+        setAllTodos([]);
+      } else {
+        setIsLoadingMore(true);
+      }
+
+      const data: ListTodosData = {
+        query: {
+          currentPage: page,
+          pageSize: PAGE_SIZE,
+          ...(debouncedSearchText && { searchString: debouncedSearchText })
+        },
+        url: '/todos',
+      };
+
+      const result = await listTodos(data);
       const items = result.data?.items || [];
-      setAllTodos(items); // Store all todos
-      // Apply current filter
-      const filteredItems = filterTodosByPeriod(items, selectedPeriod);
-      setTodos(filteredItems);
+      const total = result.data?.total || 0;
+      const limit = result.data?.limit || PAGE_SIZE;
+      const offset = result.data?.offset || 0;
+
+      setTotalItems(total);
+      // Check if there are more pages based on current items and total
+      const currentItemCount = resetData ? items.length : allTodos.length + items.length;
+      setHasNextPage(currentItemCount < total);
+
+      if (resetData) {
+        setAllTodos(items);
+        const filteredItems = filterTodosByPeriod(items, selectedPeriod);
+        setTodos(filteredItems);
+        setCurrentPage(1);
+      } else {
+        // Append new items and remove duplicates by ID
+        const newAllTodos = [...allTodos, ...items];
+        const uniqueTodos = newAllTodos.filter((todo, index, self) =>
+          index === self.findIndex(t => t.id === todo.id)
+        );
+        setAllTodos(uniqueTodos);
+        const filteredItems = filterTodosByPeriod(uniqueTodos, selectedPeriod);
+        setTodos(filteredItems);
+        setCurrentPage(page);
+      }
     } catch (e) {
       console.error('Failed to fetch todos:', e);
       setError('Failed to load todos. Please try again later.');
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
     }
   };
 
   const searchTodos = async () => {
-    if (debouncedSearchText) {
-      const data: ListTodosData = {
-        query: { searchString: debouncedSearchText },
-        url: '/todos',
-      };
-      try {
-        const result = await listTodos(data);
-        const items = result.data?.items || [];
-        setAllTodos(items); // Store all search results
-        // Apply current filter to search results
-        const filteredItems = filterTodosByPeriod(items, selectedPeriod);
-        setTodos(filteredItems);
-        if (inputRef.current) {
-          inputRef.current.blur(); // Optionally blur the input after search
-        }
-      } catch (error) {
-        console.error('Error fetching todos with search:', error);
-        setError('Failed to search todos. Please try again later.');
-      }
+    // Reset pagination when searching
+    setCurrentPage(1);
+    setHasNextPage(true);
+    await fetchAndSetTodos(1, true);
+    if (inputRef.current) {
+      inputRef.current.blur(); // Optionally blur the input after search
     }
   };
 
   useEffect(() => {
-    fetchAndSetTodos();
+    fetchAndSetTodos(1, true);
   }, [refetchKey]);
 
   useEffect(() => {
-    searchTodos();
+    if (debouncedSearchText) {
+      searchTodos();
+    } else {
+      // If search is cleared, reset to initial fetch
+      fetchAndSetTodos(1, true);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearchText]);
 
@@ -239,6 +277,16 @@ const RecentTodoList: React.FC<RecentTodoListProps> = ({ refetchKey, showSearchI
     const filteredItems = filterTodosByPeriod(allTodos, selectedPeriod);
     setTodos(filteredItems);
   }, [selectedPeriod, allTodos]);
+
+  /**
+   * Handles loading more items when reaching the end of the list
+   */
+  const handleLoadMore = React.useCallback(() => {
+    if (!isLoadingMore && hasNextPage && !isLoading) {
+      const nextPage = currentPage + 1;
+      fetchAndSetTodos(nextPage, false);
+    }
+  }, [isLoadingMore, hasNextPage, isLoading, currentPage]);
 
   /**
    * Handles the deletion of a todo item.
@@ -253,7 +301,7 @@ const RecentTodoList: React.FC<RecentTodoListProps> = ({ refetchKey, showSearchI
       };
       await deleteTodo(todoDeleteData);
       // Refetch todos after deletion
-      fetchAndSetTodos();
+      fetchAndSetTodos(1, true);
 
     } catch (e) {
       console.error('Failed to delete todo:', e);
@@ -279,11 +327,26 @@ const RecentTodoList: React.FC<RecentTodoListProps> = ({ refetchKey, showSearchI
   }
 
   const handleSearch = (text: string): void => {
-
     setSearchText(text);
-    // Trigger a re-fetch or filter the todo list based on the search text
+    // Reset pagination when searching
+    if (!text) {
+      setCurrentPage(1);
+      setHasNextPage(true);
+    }
+  };
 
-  }
+  /**
+   * Renders loading indicator for pagination
+   */
+  const renderFooter = () => {
+    if (!isLoadingMore) return null;
+    return (
+      <View style={styles.loadingFooter}>
+        <ActivityIndicator size="small" color="#007AFF" />
+        <Text style={styles.loadingText}>Loading more...</Text>
+      </View>
+    );
+  };
 
 
   return (
@@ -302,16 +365,25 @@ const RecentTodoList: React.FC<RecentTodoListProps> = ({ refetchKey, showSearchI
       )}
 
       {/* Render the list of todos */}
-
-      <FlatList
-        data={todos} // Use the state variable for data
-        renderItem={({ item }) => <TodoItem item={item} onDelete={handleDeleteItem} />}
-        keyExtractor={item => item.id}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>No todos found.</Text>
-        }
-      />
+      {todos.length === 0 ? (
+        <Text style={styles.emptyText}>No todos found.</Text>
+      ) : (
+        <VirtualizedList<TodoModel>
+          data={todos}
+          initialNumToRender={4}
+          renderItem={({ item }) => <TodoItem item={item} onDelete={handleDeleteItem} />}
+          keyExtractor={(item: TodoModel) => item.id}
+          getItemCount={(data) => data?.length || 0}
+          getItem={(data, index) => data[index]}
+          showsVerticalScrollIndicator={false}
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.1}
+          ListFooterComponent={renderFooter}
+          maxToRenderPerBatch={10}
+          removeClippedSubviews={true}
+          windowSize={10}
+        />
+      )}
     </View>
   );
 };
@@ -405,7 +477,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 20,
     color: '#777',
-  }
+  },
+  loadingFooter: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 5,
+    fontSize: 14,
+    color: '#666',
+  },
 });
 
 export default RecentTodoList;
