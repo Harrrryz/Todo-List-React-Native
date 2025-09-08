@@ -821,6 +821,22 @@ export type ListTodosData = {
          * Field to search
          */
         sortOrder?: 'asc' | 'desc' | null;
+        /**
+         * Filter todos with start_time after this datetime (ISO format)
+         */
+        start_time_from?: string | null;
+        /**
+         * Filter todos with start_time before this datetime (ISO format)
+         */
+        start_time_to?: string | null;
+        /**
+         * Filter todos with end_time after this datetime (ISO format)
+         */
+        end_time_from?: string | null;
+        /**
+         * Filter todos with end_time before this datetime (ISO format)
+         */
+        end_time_to?: string | null;
     };
     url: '/todos';
 };
@@ -1142,6 +1158,24 @@ export type ClearSessionHistoryResponses = {
 };
 
 export type ClearSessionHistoryResponse = ClearSessionHistoryResponses[keyof ClearSessionHistoryResponses];
+
+export type CreateNewSessionData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/todos/agent-sessions/new';
+};
+
+export type CreateNewSessionResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: {
+        [key: string]: unknown;
+    };
+};
+
+export type CreateNewSessionResponse = CreateNewSessionResponses[keyof CreateNewSessionResponses];
 
 export type GetSessionHistoryData = {
     body?: never;
