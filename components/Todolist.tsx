@@ -18,25 +18,27 @@ import { FilterPeriod, useFilter } from './FilterContext';
 import { Input } from './ui/input';
 
 /**
- * Helper function to filter todos based on the selected period
+ * Helper function to generate time filter parameters for the API based on the selected period
  */
-const filterTodosByPeriod = (todos: TodoModel[], period: FilterPeriod): TodoModel[] => {
+const getTimeFilterParams = (period: FilterPeriod) => {
   const now = dayjs();
+  const params: {
+    start_time_from?: string;
+    start_time_to?: string;
+    end_time_from?: string;
+    end_time_to?: string;
+  } = {};
 
   if (period === 'history') {
     // Show todos where end_time is in the past
-    return todos.filter(todo => {
-      const todoEndTime = dayjs(todo.end_time);
-      return todoEndTime.isBefore(now);
-    });
+    params.end_time_to = now.toISOString();
+    return params;
   }
 
   if (period === 'active') {
     // Show todos where end_time is not in the past (current and future todos)
-    return todos.filter(todo => {
-      const todoEndTime = dayjs(todo.end_time);
-      return todoEndTime.isAfter(now) || todoEndTime.isSame(now, 'day');
-    });
+    params.end_time_from = now.toISOString();
+    return params;
   }
 
   let endDate: dayjs.Dayjs;
@@ -52,24 +54,15 @@ const filterTodosByPeriod = (todos: TodoModel[], period: FilterPeriod): TodoMode
       endDate = now.add(1, 'month');
       break;
     default:
-      return todos;
+      return params;
   }
 
-  return todos.filter(todo => {
-    const todoEndTime = dayjs(todo.end_time);
-    // For time-based filters, show active todos within the specified period
-    // Active todos are those where end_time is not in the past
-    const isActive = todoEndTime.isAfter(now) || todoEndTime.isSame(now, 'day');
+  // For time-based filters, show active todos that are relevant to the time period
+  // We want todos that are active and relevant to the specified time period
+  params.end_time_from = now.toISOString(); // Only active todos
+  params.start_time_to = endDate.toISOString(); // That start before the end of the period
 
-    if (!isActive) {
-      return false; // Don't show past todos in time-based filters
-    }
-
-    // Filter based on start_time for the time period (when the todo is scheduled to start)
-    const todoStartTime = dayjs(todo.start_time);
-    // Show todos from now until the specified future period
-    return todoStartTime.isAfter(now) && (todoStartTime.isBefore(endDate) || todoStartTime.isSame(endDate, 'day'));
-  });
+  return params;
 };
 
 /**
@@ -175,11 +168,12 @@ interface RecentTodoListProps {
 const RecentTodoList: React.FC<RecentTodoListProps> = ({ refetchKey, showSearchInput }) => {
   // State hooks must be called inside the component
   const [todos, setTodos] = useState<TodoModel[]>([]);
-  const [allTodos, setAllTodos] = useState<TodoModel[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [searchText, setSearchText] = useState<string>(''); // State for search input
   const [debouncedSearchText] = useDebounce(searchText, 1000);
+  const [hasInitialized, setHasInitialized] = useState<boolean>(false);
+  const [hasSearched, setHasSearched] = useState<boolean>(false); // Track if user has searched
   const inputRef = useRef<any>(null);
   const { selectedPeriod } = useFilter();
 
@@ -188,26 +182,31 @@ const RecentTodoList: React.FC<RecentTodoListProps> = ({ refetchKey, showSearchI
   const [hasNextPage, setHasNextPage] = useState<boolean>(true);
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   const [totalItems, setTotalItems] = useState<number>(0);
-  const PAGE_SIZE = 5;
+  const PAGE_SIZE = 40;
 
   // Move fetchAndSetTodos outside useEffect so it can be reused
   const fetchAndSetTodos = async (page: number = 1, resetData: boolean = true) => {
     try {
-      console.log(`Fetching todos page ${page}...`);
+      console.log(`Fetching todos page ${page} for period: ${selectedPeriod}...`);
       if (resetData) {
         setIsLoading(true);
         setCurrentPage(1);
         setTodos([]);
-        setAllTodos([]);
+        // Reset pagination state when fetching fresh data
+        setHasNextPage(true);
+        setTotalItems(0);
       } else {
         setIsLoadingMore(true);
       }
 
+      const timeFilterParams = getTimeFilterParams(selectedPeriod);
       const data: ListTodosData = {
         query: {
           currentPage: page,
           pageSize: PAGE_SIZE,
-          ...(debouncedSearchText && { searchString: debouncedSearchText })
+          ...(debouncedSearchText && { searchString: debouncedSearchText }),
+          // Add time filtering parameters for backend filtering
+          ...timeFilterParams
         },
         url: '/todos',
       };
@@ -220,23 +219,20 @@ const RecentTodoList: React.FC<RecentTodoListProps> = ({ refetchKey, showSearchI
 
       setTotalItems(total);
       // Check if there are more pages based on current items and total
-      const currentItemCount = resetData ? items.length : allTodos.length + items.length;
+      const currentItemCount = resetData ? items.length : todos.length + items.length;
       setHasNextPage(currentItemCount < total);
 
       if (resetData) {
-        setAllTodos(items);
-        const filteredItems = filterTodosByPeriod(items, selectedPeriod);
-        setTodos(filteredItems);
+        // Backend filtering - use items directly without frontend filtering
+        setTodos(items);
         setCurrentPage(1);
       } else {
         // Append new items and remove duplicates by ID
-        const newAllTodos = [...allTodos, ...items];
-        const uniqueTodos = newAllTodos.filter((todo, index, self) =>
+        const newTodos = [...todos, ...items];
+        const uniqueTodos = newTodos.filter((todo, index, self) =>
           index === self.findIndex(t => t.id === todo.id)
         );
-        setAllTodos(uniqueTodos);
-        const filteredItems = filterTodosByPeriod(uniqueTodos, selectedPeriod);
-        setTodos(filteredItems);
+        setTodos(uniqueTodos);
         setCurrentPage(page);
       }
     } catch (e) {
@@ -259,24 +255,37 @@ const RecentTodoList: React.FC<RecentTodoListProps> = ({ refetchKey, showSearchI
   };
 
   useEffect(() => {
+    // Initial data fetch on component mount
     fetchAndSetTodos(1, true);
+    setHasInitialized(true);
+  }, []); // Empty dependency array for initial fetch
+
+  useEffect(() => {
+    // Refetch when refetchKey changes (but not on initial mount)
+    if (refetchKey > 0) {
+      fetchAndSetTodos(1, true);
+    }
   }, [refetchKey]);
 
   useEffect(() => {
+    // Fetch fresh data whenever the selected period changes (but not on initial mount)
+    if (hasInitialized) {
+      console.log(`Filter changed to: ${selectedPeriod}, fetching fresh data...`);
+      fetchAndSetTodos(1, true);
+    }
+  }, [selectedPeriod, hasInitialized]);
+
+  useEffect(() => {
+    // Handle search functionality
     if (debouncedSearchText) {
+      setHasSearched(true);
       searchTodos();
-    } else {
-      // If search is cleared, reset to initial fetch
+    } else if (hasSearched && searchText === '' && debouncedSearchText === '') {
+      // Only refetch when search is explicitly cleared, not on initial load
       fetchAndSetTodos(1, true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearchText]);
-
-  // Filter todos when selectedPeriod changes
-  useEffect(() => {
-    const filteredItems = filterTodosByPeriod(allTodos, selectedPeriod);
-    setTodos(filteredItems);
-  }, [selectedPeriod, allTodos]);
 
   /**
    * Handles loading more items when reaching the end of the list
@@ -328,6 +337,9 @@ const RecentTodoList: React.FC<RecentTodoListProps> = ({ refetchKey, showSearchI
 
   const handleSearch = (text: string): void => {
     setSearchText(text);
+    if (text !== '') {
+      setHasSearched(true);
+    }
     // Reset pagination when searching
     if (!text) {
       setCurrentPage(1);
