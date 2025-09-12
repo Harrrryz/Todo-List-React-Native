@@ -3,16 +3,6 @@ import dayjs from 'dayjs';
 import { Link } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View, VirtualizedList } from 'react-native';
-import { PanGestureHandler } from 'react-native-gesture-handler';
-import Animated, {
-  Extrapolate,
-  interpolate,
-  runOnJS,
-  useAnimatedGestureHandler,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from 'react-native-reanimated';
 import { useDebounce } from 'use-debounce';
 import { FilterPeriod, useFilter } from './FilterContext';
 import { Input } from './ui/input';
@@ -66,96 +56,31 @@ const getTimeFilterParams = (period: FilterPeriod) => {
 };
 
 /**
- * Renders a single todo item in the list with swipe-to-delete functionality.
+ * Renders a single todo item in the list.
  */
 const TodoItem: React.FC<{ item: TodoModel; onDelete: (id: string) => void }> = ({ item, onDelete }) => {
-  const translateX = useSharedValue(0);
-  const scale = useSharedValue(1);
-  const opacity = useSharedValue(1);
-
-  const SWIPE_THRESHOLD = -100;
-  const DELETE_THRESHOLD = -150;
-
   const handleDelete = () => {
     onDelete(item.id);
   };
 
-  const gestureHandler = useAnimatedGestureHandler({
-    onStart: () => {
-      scale.value = withSpring(0.95);
-    },
-    onActive: (event) => {
-      // Only allow swiping to the left (negative values)
-      translateX.value = Math.min(0, event.translationX);
-    },
-    onEnd: (event) => {
-      scale.value = withSpring(1);
-
-      if (translateX.value < DELETE_THRESHOLD) {
-        // Delete the item
-        opacity.value = withSpring(0);
-        translateX.value = withSpring(-500, undefined, () => {
-          runOnJS(handleDelete)();
-        });
-      } else if (translateX.value < SWIPE_THRESHOLD) {
-        // Show delete hint but don't delete
-        translateX.value = withSpring(SWIPE_THRESHOLD);
-      } else {
-        // Return to original position
-        translateX.value = withSpring(0);
-      }
-    },
-  });
-
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [
-        { translateX: translateX.value },
-        { scale: scale.value }
-      ],
-      opacity: opacity.value,
-    };
-  });
-
-  const deleteButtonStyle = useAnimatedStyle(() => {
-    const deleteOpacity = interpolate(
-      translateX.value,
-      [0, SWIPE_THRESHOLD, DELETE_THRESHOLD],
-      [0, 0.7, 1],
-      Extrapolate.CLAMP
-    );
-    return {
-      opacity: deleteOpacity,
-    };
-  });
-
   return (
-    <View style={styles.itemWrapper}>
-      {/* Delete button behind the item */}
-      <Animated.View style={[styles.deleteBackground, deleteButtonStyle]}>
-        <Text style={styles.deleteBackgroundText}>Delete</Text>
-      </Animated.View>
-
-      <PanGestureHandler onGestureEvent={gestureHandler}>
-        <Animated.View style={[styles.itemContainer, animatedStyle]}>
-          {/* The main content of the item is a link to the detail page */}
-          <Link href={{ pathname: '/todo/[id]', params: { id: item.id } }} asChild style={styles.itemTextContainer}>
-            <TouchableOpacity>
-              <Text style={styles.itemTitle}>
-                {item.item}
-              </Text>
-              <Text style={styles.itemDueDate}>
-                {item.start_time ? `Start: ${dayjs(item.start_time).format('YYYY-MM-DD HH:mm')}` : 'No start date'}
-                {item.end_time ? ` | End: ${dayjs(item.end_time).format('YYYY-MM-DD HH:mm')}` : ''}
-              </Text>
-            </TouchableOpacity>
-          </Link>
-          {/* A small button on the right to delete the item */}
-          <TouchableOpacity onPress={handleDelete} style={styles.deleteButton}>
-            <Text style={styles.deleteButtonText}>×</Text>
-          </TouchableOpacity>
-        </Animated.View>
-      </PanGestureHandler>
+    <View style={styles.itemContainer}>
+      {/* The main content of the item is a link to the detail page */}
+      <Link href={{ pathname: '/todo/[id]', params: { id: item.id } }} asChild style={styles.itemTextContainer}>
+        <TouchableOpacity>
+          <Text style={styles.itemTitle}>
+            {item.item}
+          </Text>
+          <Text style={styles.itemDueDate}>
+            {item.start_time ? `Start: ${dayjs(item.start_time).format('YYYY-MM-DD HH:mm')}` : 'No start date'}
+            {item.end_time ? ` | End: ${dayjs(item.end_time).format('YYYY-MM-DD HH:mm')}` : ''}
+          </Text>
+        </TouchableOpacity>
+      </Link>
+      {/* A small button on the right to delete the item */}
+      <TouchableOpacity onPress={handleDelete} style={styles.deleteButton}>
+        <Text style={styles.deleteButtonText}>×</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -417,27 +342,6 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     color: '#333',
   },
-  itemWrapper: {
-    marginBottom: 10,
-    position: 'relative',
-  },
-  deleteBackground: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    bottom: 0,
-    backgroundColor: '#FF3B30',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    width: 150,
-  },
-  deleteBackgroundText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
   itemContainer: {
     backgroundColor: '#FFFFFF',
     padding: 15,
@@ -450,6 +354,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 1.41,
     elevation: 2,
+    marginBottom: 10,
   },
   itemTextContainer: {
     flex: 1, // Allows the text container to take up available space

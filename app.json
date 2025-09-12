@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.diarrhea.test",
+      "bundleIdentifier": "com.diarrhea.todo",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }

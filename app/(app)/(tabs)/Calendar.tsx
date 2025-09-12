@@ -4,7 +4,7 @@ import { listTodos, TodoModel } from '@/client';
 import { useTodoRefresh } from '@/components/TodoRefreshContext';
 import dayjs from 'dayjs';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, StyleSheet, View, ActivityIndicator } from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
 import {
   CalendarProvider,
   CalendarUtils,
@@ -74,7 +74,7 @@ const CalendarScreen = () => {
       // Fetch todos from 30 days ago to 30 days in the future
       const startDate = dayjs().subtract(30, 'day').startOf('day').toISOString();
       const endDate = dayjs().add(30, 'day').endOf('day').toISOString();
-      
+
       // First, get all todos in the date range to mark calendar properly
       const response = await listTodos({
         query: {
@@ -85,35 +85,35 @@ const CalendarScreen = () => {
           sortOrder: 'asc'
         }
       });
-      
+
       const items = response.data?.items || [];
-      
+
       // Group todos by date to get one per day for initial display
-      const todosByDate = groupBy(items, (todo) => 
+      const todosByDate = groupBy(items, (todo) =>
         dayjs(todo.start_time).format('YYYY-MM-DD')
       );
-      
+
       // Take only the first todo from each day for initial display
       const sampledTodos = Object.values(todosByDate).map(dayTodos => dayTodos[0]);
       setTodoList(sampledTodos);
-      
+
       // Transform todos to timeline events for initial display
       const timelineEvents = sampledTodos.map(transformTodoToTimelineEvent);
       setEvents(timelineEvents);
-      
+
       // Group events by date for timeline
-      const groupedEvents = groupBy(timelineEvents, (event) => 
+      const groupedEvents = groupBy(timelineEvents, (event) =>
         CalendarUtils.getCalendarDateString(event.start)
       );
       setEventsByDate(groupedEvents);
-      
+
       // Cache the full data for each day
       const cacheData: { [key: string]: TodoModel[] } = {};
       Object.entries(todosByDate).forEach(([dateString, dayTodos]) => {
         cacheData[dateString] = dayTodos;
       });
       setDayTodosCache(cacheData);
-      
+
     } catch (error) {
       console.error('Failed to fetch initial calendar data:', error);
     } finally {
@@ -132,7 +132,7 @@ const CalendarScreen = () => {
       setIsLoading(true);
       const startOfDay = dayjs(dateString).startOf('day').toISOString();
       const endOfDay = dayjs(dateString).endOf('day').toISOString();
-      
+
       const response = await listTodos({
         query: {
           start_time_from: startOfDay,
@@ -142,26 +142,26 @@ const CalendarScreen = () => {
           sortOrder: 'asc'
         }
       });
-      
+
       const dayTodos = response.data?.items || [];
-      
+
       // Cache the full day data
       setDayTodosCache(prev => ({
         ...prev,
         [dateString]: dayTodos
       }));
-      
+
       // Update the timeline events for this specific day
       const dayTimelineEvents = dayTodos.map(transformTodoToTimelineEvent);
-      const groupedDayEvents = groupBy(dayTimelineEvents, (event) => 
+      const groupedDayEvents = groupBy(dayTimelineEvents, (event) =>
         CalendarUtils.getCalendarDateString(event.start)
       );
-      
+
       setEventsByDate(prev => ({
         ...prev,
         ...groupedDayEvents
       }));
-      
+
       return dayTodos;
     } catch (error) {
       console.error('Failed to fetch todos for day:', error);
@@ -200,16 +200,16 @@ const CalendarScreen = () => {
   const onDateChanged = async (date: string, source: string) => {
     console.log('TimelineCalendarScreen onDateChanged: ', date, source);
     setCurrentDate(date);
-    
+
     // Fetch all todos for the selected day and update timeline
     const dayTodos = await fetchTodosForDay(date);
-    
+
     // Update the timeline events to show all todos for the selected day
     const dayTimelineEvents = dayTodos.map(transformTodoToTimelineEvent);
-    const groupedDayEvents = groupBy(dayTimelineEvents, (event) => 
+    const groupedDayEvents = groupBy(dayTimelineEvents, (event) =>
       CalendarUtils.getCalendarDateString(event.start)
     );
-    
+
     setEventsByDate(prev => ({
       ...prev,
       ...groupedDayEvents
