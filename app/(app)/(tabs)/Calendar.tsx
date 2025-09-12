@@ -4,7 +4,7 @@ import { listTodos, TodoModel } from '@/client';
 import { useTodoRefresh } from '@/components/TodoRefreshContext';
 import dayjs from 'dayjs';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View, ActivityIndicator } from 'react-native';
 import {
   CalendarProvider,
   CalendarUtils,
@@ -64,50 +64,156 @@ const CalendarScreen = () => {
   const [todoList, setTodoList] = useState<TodoModel[]>([]);
   const [events, setEvents] = useState<TimelineEventProps[]>([]);
   const [eventsByDate, setEventsByDate] = useState<{ [key: string]: TimelineEventProps[] }>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [dayTodosCache, setDayTodosCache] = useState<{ [key: string]: TodoModel[] }>({});
+
+  // Fetch initial data with one todo per day for calendar marking
+  const fetchInitialCalendarData = async () => {
+    try {
+      setIsLoading(true);
+      // Fetch todos from 30 days ago to 30 days in the future
+      const startDate = dayjs().subtract(30, 'day').startOf('day').toISOString();
+      const endDate = dayjs().add(30, 'day').endOf('day').toISOString();
+      
+      // First, get all todos in the date range to mark calendar properly
+      const response = await listTodos({
+        query: {
+          start_time_from: startDate,
+          start_time_to: endDate,
+          pageSize: 200, // Get more items to ensure we get all days with todos
+          orderBy: 'start_time',
+          sortOrder: 'asc'
+        }
+      });
+      
+      const items = response.data?.items || [];
+      
+      // Group todos by date to get one per day for initial display
+      const todosByDate = groupBy(items, (todo) => 
+        dayjs(todo.start_time).format('YYYY-MM-DD')
+      );
+      
+      // Take only the first todo from each day for initial display
+      const sampledTodos = Object.values(todosByDate).map(dayTodos => dayTodos[0]);
+      setTodoList(sampledTodos);
+      
+      // Transform todos to timeline events for initial display
+      const timelineEvents = sampledTodos.map(transformTodoToTimelineEvent);
+      setEvents(timelineEvents);
+      
+      // Group events by date for timeline
+      const groupedEvents = groupBy(timelineEvents, (event) => 
+        CalendarUtils.getCalendarDateString(event.start)
+      );
+      setEventsByDate(groupedEvents);
+      
+      // Cache the full data for each day
+      const cacheData: { [key: string]: TodoModel[] } = {};
+      Object.entries(todosByDate).forEach(([dateString, dayTodos]) => {
+        cacheData[dateString] = dayTodos;
+      });
+      setDayTodosCache(cacheData);
+      
+    } catch (error) {
+      console.error('Failed to fetch initial calendar data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch all todos for a specific day
+  const fetchTodosForDay = async (dateString: string) => {
+    // Check if we already have full data for this day
+    if (dayTodosCache[dateString]) {
+      return dayTodosCache[dateString];
+    }
+
+    try {
+      setIsLoading(true);
+      const startOfDay = dayjs(dateString).startOf('day').toISOString();
+      const endOfDay = dayjs(dateString).endOf('day').toISOString();
+      
+      const response = await listTodos({
+        query: {
+          start_time_from: startOfDay,
+          start_time_to: endOfDay,
+          pageSize: 100, // Fetch all todos for the day
+          orderBy: 'start_time',
+          sortOrder: 'asc'
+        }
+      });
+      
+      const dayTodos = response.data?.items || [];
+      
+      // Cache the full day data
+      setDayTodosCache(prev => ({
+        ...prev,
+        [dateString]: dayTodos
+      }));
+      
+      // Update the timeline events for this specific day
+      const dayTimelineEvents = dayTodos.map(transformTodoToTimelineEvent);
+      const groupedDayEvents = groupBy(dayTimelineEvents, (event) => 
+        CalendarUtils.getCalendarDateString(event.start)
+      );
+      
+      setEventsByDate(prev => ({
+        ...prev,
+        ...groupedDayEvents
+      }));
+      
+      return dayTodos;
+    } catch (error) {
+      console.error('Failed to fetch todos for day:', error);
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchTodos = async () => {
-      try {
-        // Fetch the todo list from the API
-        const response = await listTodos();
-        const items = response.data?.items || [];
-        setTodoList(items);
-
-        // Transform todos to timeline events
-        const timelineEvents = items.map(transformTodoToTimelineEvent);
-        setEvents(timelineEvents);
-
-        // Group events by date for timeline
-        const groupedEvents = groupBy(timelineEvents, (event) =>
-          CalendarUtils.getCalendarDateString(event.start)
-        );
-        setEventsByDate(groupedEvents);
-      } catch (error) {
-        console.error('Failed to fetch todos:', error);
-      }
-    };
-
-    fetchTodos();
+    fetchInitialCalendarData();
   }, [refreshKey]);
 
   // Memoize the marked dates to prevent recalculation on every render
   const markedDates = useMemo(() => {
     const marks: { [key: string]: any } = {};
 
+    // Mark days from the initial todo list (sampled data)
     todoList.forEach(todo => {
-      // Extract only the date part (YYYY-MM-DD) from the full timestamp
       const datePart = dayjs(todo.start_time).format('YYYY-MM-DD');
       if (!datePart) return;
       marks[datePart] = { marked: true, dotColor: '#5092D8' };
     });
 
+    // Also mark days that we have in cache (full day data)
+    Object.keys(dayTodosCache).forEach(dateString => {
+      if (dayTodosCache[dateString].length > 0) {
+        marks[dateString] = { marked: true, dotColor: '#5092D8' };
+      }
+    });
+
     return marks;
-  }, [todoList]);
+  }, [todoList, dayTodosCache]);
 
   // Date change handlers
-  const onDateChanged = (date: string, source: string) => {
+  const onDateChanged = async (date: string, source: string) => {
     console.log('TimelineCalendarScreen onDateChanged: ', date, source);
     setCurrentDate(date);
+    
+    // Fetch all todos for the selected day and update timeline
+    const dayTodos = await fetchTodosForDay(date);
+    
+    // Update the timeline events to show all todos for the selected day
+    const dayTimelineEvents = dayTodos.map(transformTodoToTimelineEvent);
+    const groupedDayEvents = groupBy(dayTimelineEvents, (event) => 
+      CalendarUtils.getCalendarDateString(event.start)
+    );
+    
+    setEventsByDate(prev => ({
+      ...prev,
+      ...groupedDayEvents
+    }));
   };
 
   const onMonthChange = (month: any, updateSource: any) => {
@@ -232,6 +338,11 @@ const CalendarScreen = () => {
           initialTime={INITIAL_TIME}
         />
       </CalendarProvider>
+      {isLoading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#4A90E2" />
+        </View>
+      )}
     </View>
   );
 };
@@ -240,6 +351,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F7FA',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
   },
 });
 
