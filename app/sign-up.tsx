@@ -5,76 +5,119 @@ import { AlertTriangle } from 'lucide-react-native';
 import { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-export default function Authorization() {
+export default function SignUp() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const { signIn } = useSession();
+  const { signUp } = useSession();
 
-  const handleLogin = async () => {
-    const AccountLoginData = {
-      username: email,
-      password: password,
+  const handleSignUp = async () => {
+    // Basic validation
+    if (!email || !password || !confirmPassword) {
+      setError('Please fill in all required fields');
+      return;
     }
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return;
+    }
+
+    if (!email.includes('@')) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    const AccountRegisterData = {
+      email: email,
+      password: password,
+      name: name || null,
+    };
+
     try {
-      await signIn(AccountLoginData);
+      await signUp(AccountRegisterData);
       router.replace('/');
     } catch (error) {
       if (error instanceof NormalAuthError) {
-        console.error('Login error:', error.message);
+        console.error('Sign-up error:', error.message);
         setError(error.message);
       } else {
-        console.error('Unexpected error during login:', error);
+        console.error('Unexpected error during sign-up:', error);
         setError('An unexpected error occurred. Please try again later.');
       }
     }
   };
 
-  const handleGoToSignUp = () => {
-    router.push('/sign-up');
+  const handleBackToSignIn = () => {
+    router.back();
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.commitText}>Commit</Text>
-      <Text style={styles.title}>Login</Text>
+      <Text style={styles.title}>Sign Up</Text>
+
       <TextInput
         style={styles.input}
-        placeholder="Email"
+        placeholder="Email *"
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
         autoCapitalize="none"
       />
+
       <TextInput
         style={styles.input}
-        placeholder="Password"
+        placeholder="Name (Optional)"
+        value={name}
+        onChangeText={setName}
+        autoCapitalize="words"
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="Password *"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
       />
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Sign In</Text>
+
+      <TextInput
+        style={styles.input}
+        placeholder="Confirm Password *"
+        value={confirmPassword}
+        onChangeText={setConfirmPassword}
+        secureTextEntry
+      />
+
+      <TouchableOpacity style={styles.button} onPress={handleSignUp}>
+        <Text style={styles.buttonText}>Sign Up</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.linkButton} onPress={handleGoToSignUp}>
-        <Text style={styles.linkText}>Don&apos;t have an account? Sign Up</Text>
+      <TouchableOpacity style={styles.linkButton} onPress={handleBackToSignIn}>
+        <Text style={styles.linkText}>Already have an account? Sign In</Text>
       </TouchableOpacity>
 
-      {error &&
+      {error && (
         <Alert icon={AlertTriangle} variant='destructive' className='max-w-xl mt-3'>
           <AlertTitle>Error!</AlertTitle>
           <AlertDescription>
             {error}
           </AlertDescription>
         </Alert>
-      }
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-
   commitText: {
     fontSize: 40,
     fontWeight: 'bold',
@@ -117,7 +160,6 @@ const styles = StyleSheet.create({
   linkButton: {
     alignItems: 'center',
     padding: 10,
-    marginBottom: 15,
   },
   linkText: {
     color: '#007AFF',
