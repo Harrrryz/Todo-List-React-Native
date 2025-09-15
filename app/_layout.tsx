@@ -74,7 +74,7 @@ export default function RootLayout() {
 
   client.setConfig({
     auth: () => getToken(),
-    baseURL: "http://127.0.0.1:8089",
+    baseURL: process.env.EXPO_PUBLIC_API_BASE_URL || "https://putian-ai-backend-litestar.onrender.com",
   });
 
   return (

@@ -166,6 +166,40 @@ export type OauthAccount = {
 };
 
 /**
+ * RateLimitErrorResponse
+ */
+export type RateLimitErrorResponse = {
+    /**
+     * Status of the operation
+     */
+    status?: string;
+    /**
+     * Human-readable error message
+     */
+    message: string;
+    /**
+     * Error code
+     */
+    error_code?: string;
+    /**
+     * Number of requests used this month
+     */
+    current_usage: number;
+    /**
+     * Maximum requests allowed per month
+     */
+    monthly_limit: number;
+    /**
+     * When the quota resets
+     */
+    reset_date: string;
+    /**
+     * Requests remaining this month
+     */
+    remaining_quota: number;
+};
+
+/**
  * SessionConversationRequest
  */
 export type SessionConversationRequest = {
@@ -321,6 +355,36 @@ export type TodoModel = {
     importance: Importance;
     user_id: string;
     tags?: Array<string> | null;
+};
+
+/**
+ * UsageStatsResponse
+ */
+export type UsageStatsResponse = {
+    /**
+     * Status of the operation
+     */
+    status?: string;
+    /**
+     * Current month in YYYY-MM format
+     */
+    current_month: string;
+    /**
+     * Number of requests used this month
+     */
+    usage_count: number;
+    /**
+     * Maximum requests allowed per month
+     */
+    monthly_limit: number;
+    /**
+     * Requests remaining this month
+     */
+    remaining_quota: number;
+    /**
+     * When the quota resets
+     */
+    reset_date: string;
 };
 
 /**
@@ -1121,7 +1185,7 @@ export type AgentCreateTodoResponses = {
     /**
      * Document created, URL follows
      */
-    201: AgentTodoResponse;
+    201: AgentTodoResponse | RateLimitErrorResponse;
 };
 
 export type AgentCreateTodoResponse = AgentCreateTodoResponses[keyof AgentCreateTodoResponses];
@@ -1211,6 +1275,22 @@ export type GetSessionHistoryResponses = {
 };
 
 export type GetSessionHistoryResponse = GetSessionHistoryResponses[keyof GetSessionHistoryResponses];
+
+export type GetUsageStatsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/todos/usage-stats';
+};
+
+export type GetUsageStatsResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: UsageStatsResponse;
+};
+
+export type GetUsageStatsResponse = GetUsageStatsResponses[keyof GetUsageStatsResponses];
 
 export type ListAgentSessionsData = {
     body?: never;
