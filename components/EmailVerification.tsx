@@ -1,7 +1,7 @@
 import { useSession } from '@/components/ctx';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { router } from 'expo-router';
-import { CheckCircle, Mail, AlertTriangle } from 'lucide-react-native';
+import { AlertTriangle, CheckCircle, Mail } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -10,32 +10,32 @@ interface VerificationPendingProps {
   onBackToSignIn?: () => void;
 }
 
-export const VerificationPending: React.FC<VerificationPendingProps> = ({ 
-  email, 
-  onBackToSignIn 
+export const VerificationPending: React.FC<VerificationPendingProps> = ({
+  email,
+  onBackToSignIn
 }) => {
   return (
     <View style={styles.container}>
       <View style={styles.iconContainer}>
         <Mail size={64} color="#007AFF" />
       </View>
-      
+
       <Text style={styles.title}>📧 Check Your Email</Text>
-      
+
       <Text style={styles.description}>
         We&apos;ve sent a verification link to{'\n'}
         <Text style={styles.email}>{email}</Text>
       </Text>
-      
+
       <Text style={styles.instructions}>
         Please click the link in the email to verify your account.
       </Text>
-      
+
       <ResendVerificationButton email={email} />
-      
+
       {onBackToSignIn && (
-        <TouchableOpacity 
-          style={styles.linkButton} 
+        <TouchableOpacity
+          style={styles.linkButton}
           onPress={onBackToSignIn}
         >
           <Text style={styles.linkText}>Back to Sign In</Text>
@@ -49,8 +49,8 @@ interface ResendVerificationButtonProps {
   email: string;
 }
 
-export const ResendVerificationButton: React.FC<ResendVerificationButtonProps> = ({ 
-  email 
+export const ResendVerificationButton: React.FC<ResendVerificationButtonProps> = ({
+  email
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -61,10 +61,10 @@ export const ResendVerificationButton: React.FC<ResendVerificationButtonProps> =
     setIsLoading(true);
     setMessage('');
     setMessageType(null);
-    
+
     try {
       const result = await resendVerificationEmail(email);
-      
+
       if (result.success) {
         setMessage(result.message);
         setMessageType('success');
@@ -83,8 +83,8 @@ export const ResendVerificationButton: React.FC<ResendVerificationButtonProps> =
 
   return (
     <View style={styles.resendContainer}>
-      <TouchableOpacity 
-        style={[styles.resendButton, isLoading && styles.disabledButton]} 
+      <TouchableOpacity
+        style={[styles.resendButton, isLoading && styles.disabledButton]}
         onPress={handleResendVerification}
         disabled={isLoading}
       >
@@ -92,11 +92,11 @@ export const ResendVerificationButton: React.FC<ResendVerificationButtonProps> =
           {isLoading ? 'Sending...' : 'Resend Verification Email'}
         </Text>
       </TouchableOpacity>
-      
+
       {message && (
-        <Alert 
-          icon={messageType === 'success' ? CheckCircle : AlertTriangle} 
-          variant={messageType === 'error' ? 'destructive' : 'default'} 
+        <Alert
+          icon={messageType === 'success' ? CheckCircle : AlertTriangle}
+          variant={messageType === 'error' ? 'destructive' : 'default'}
           className='max-w-xl mt-3'
         >
           <AlertTitle>
@@ -115,8 +115,8 @@ interface VerificationSuccessProps {
   onContinueToLogin?: () => void;
 }
 
-export const VerificationSuccess: React.FC<VerificationSuccessProps> = ({ 
-  onContinueToLogin 
+export const VerificationSuccess: React.FC<VerificationSuccessProps> = ({
+  onContinueToLogin
 }) => {
   const handleContinue = () => {
     if (onContinueToLogin) {
@@ -131,14 +131,14 @@ export const VerificationSuccess: React.FC<VerificationSuccessProps> = ({
       <View style={styles.iconContainer}>
         <CheckCircle size={64} color="#34C759" />
       </View>
-      
+
       <Text style={styles.title}>✅ Email Verified!</Text>
-      
+
       <Text style={styles.description}>
         Your email has been successfully verified.{'\n'}
         You can now log in to your account.
       </Text>
-      
+
       <TouchableOpacity style={styles.button} onPress={handleContinue}>
         <Text style={styles.buttonText}>Continue to Login</Text>
       </TouchableOpacity>

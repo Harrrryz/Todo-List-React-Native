@@ -1,4 +1,4 @@
-import { accountLogin, AccountLogin, accountRegister, AccountRegister, accountProfile, resendVerification, verifyEmail, User } from '@/client';
+import { accountLogin, AccountLogin, accountProfile, accountRegister, AccountRegister, resendVerification, User, verifyEmail } from '@/client';
 import { useStorageState } from '@/hooks/useStorageState';
 import { useRouter } from 'expo-router';
 import { createContext, use, type PropsWithChildren } from 'react';
@@ -91,14 +91,14 @@ export function SessionProvider({ children }: PropsWithChildren) {
         body: { ...data },
       });
       console.log('Login response:', response);
-      
+
       if (response.data && response.data.access_token) {
         setSession(response.data.access_token);
         router.push('/');
         return { success: true };
       } else {
         console.error('Login failed:', response.error);
-        
+
         // Check if it's a 403 error (could be unverified user)
         if (response.error && typeof response.error === 'object' && 'status' in response.error && response.error.status === 403) {
           // Try to get current user info to check verification status
@@ -116,7 +116,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
             console.log('Could not get user info:', userError);
           }
         }
-        
+
         if ((response.error as unknown as LoginError).title) {
           let extraMessage = ''
           let extra = (response.error as unknown as LoginError).extra || [];
@@ -155,10 +155,10 @@ export function SessionProvider({ children }: PropsWithChildren) {
         body: { ...data },
       });
       console.log('Sign-up response:', response);
-      
+
       if (response.data && response.data.id) {
         const user = response.data;
-        
+
         // Check if user needs email verification
         if (!user.is_verified) {
           return {
@@ -168,7 +168,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
             email: user.email
           };
         }
-        
+
         // If user is already verified (shouldn't happen with new flow, but just in case)
         // Auto-login the user
         const loginData: AccountLogin = {
@@ -208,7 +208,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
       const response = await resendVerification({
         query: { email },
       });
-      
+
       if (response.data) {
         return {
           success: true,
@@ -234,7 +234,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
       const response = await verifyEmail({
         query: { token },
       });
-      
+
       if (response.data) {
         return {
           success: true,
@@ -260,7 +260,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
       if (!session) {
         return null;
       }
-      
+
       const response = await accountProfile();
       if (response.data) {
         return response.data;
