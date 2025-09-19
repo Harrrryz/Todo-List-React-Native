@@ -11,6 +11,7 @@ import {
   Alert // <-- Import Alert for user feedback
   ,
 
+
   Image,
   ScrollView,
   StyleSheet,
@@ -128,7 +129,7 @@ const AccountScreen = () => {
           />
         </TouchableOpacity>
         <Text style={styles.userName}>{user?.email}</Text>
-        
+
         {/* Email Verification Status */}
         <View style={styles.verificationContainer}>
           {user?.is_verified ? (
