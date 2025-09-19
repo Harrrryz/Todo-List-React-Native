@@ -25,7 +25,7 @@ export default function VerifyEmail() {
     try {
       setVerificationState('loading');
       const result = await verifyUserEmail(verificationToken);
-      
+
       if (result.success) {
         setVerificationState('success');
         setMessage(result.message);
@@ -63,7 +63,7 @@ export default function VerifyEmail() {
     return (
       <View style={styles.container}>
         <Text style={styles.title}>Email Verification</Text>
-        
+
         <Alert icon={AlertTriangle} variant='destructive' className='max-w-xl mb-4'>
           <AlertTitle>Verification Failed</AlertTitle>
           <AlertDescription>
