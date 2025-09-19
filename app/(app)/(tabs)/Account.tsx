@@ -2,8 +2,10 @@
 
 import { accountProfile, listTodos, TodoModel, User } from '@/client';
 import { useSession } from '@/components/ctx';
+import { ResendVerificationButton } from '@/components/EmailVerification';
 import { useTodoRefresh } from '@/components/TodoRefreshContext';
 import { useFocusEffect } from '@react-navigation/native';
+import { CheckCircle, XCircle } from 'lucide-react-native';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   Alert // <-- Import Alert for user feedback
@@ -126,6 +128,27 @@ const AccountScreen = () => {
           />
         </TouchableOpacity>
         <Text style={styles.userName}>{user?.email}</Text>
+        
+        {/* Email Verification Status */}
+        <View style={styles.verificationContainer}>
+          {user?.is_verified ? (
+            <View style={styles.verificationStatus}>
+              <CheckCircle size={20} color="#34C759" />
+              <Text style={styles.verifiedText}>✅ Email Verified</Text>
+            </View>
+          ) : (
+            <View style={styles.verificationStatusUnverified}>
+              <View style={styles.unverifiedHeader}>
+                <XCircle size={20} color="#FF3B30" />
+                <Text style={styles.unverifiedText}>⚠️ Email Not Verified</Text>
+              </View>
+              <Text style={styles.unverifiedDescription}>
+                Please verify your email to access all features
+              </Text>
+              <ResendVerificationButton email={user?.email || ''} />
+            </View>
+          )}
+        </View>
       </View>
 
       {/* --- Statistics Section --- */}
@@ -169,6 +192,51 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     color: '#333',
+  },
+  verificationContainer: {
+    marginTop: 15,
+    alignItems: 'center',
+  },
+  verificationStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8F5E8',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  verifiedText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#34C759',
+    fontWeight: '600',
+  },
+  verificationStatusUnverified: {
+    alignItems: 'center',
+    backgroundColor: '#FFF2F2',
+    padding: 15,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FFE0E0',
+    maxWidth: 300,
+  },
+  unverifiedHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  unverifiedText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#FF3B30',
+    fontWeight: '600',
+  },
+  unverifiedDescription: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 12,
+    lineHeight: 16,
   },
   statsContainer: {
     flexDirection: 'row',

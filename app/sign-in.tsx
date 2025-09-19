@@ -1,4 +1,5 @@
 import { NormalAuthError, useSession } from '@/components/ctx';
+import { VerificationPending } from '@/components/EmailVerification';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { router } from 'expo-router';
 import { AlertTriangle } from 'lucide-react-native';
@@ -9,6 +10,8 @@ export default function Authorization() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [showVerificationPending, setShowVerificationPending] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState('');
   const { signIn } = useSession();
 
   const handleLogin = async () => {
@@ -17,8 +20,18 @@ export default function Authorization() {
       password: password,
     }
     try {
-      await signIn(AccountLoginData);
-      router.replace('/');
+      const result = await signIn(AccountLoginData);
+      
+      if (result.success) {
+        router.replace('/');
+      } else if (result.requiresVerification) {
+        // Show verification pending screen for unverified users
+        setVerificationEmail(result.email || email);
+        setShowVerificationPending(true);
+        setError(null);
+      } else if (result.error) {
+        setError(result.error);
+      }
     } catch (error) {
       if (error instanceof NormalAuthError) {
         console.error('Login error:', error.message);
@@ -33,6 +46,21 @@ export default function Authorization() {
   const handleGoToSignUp = () => {
     router.push('/sign-up');
   };
+
+  const handleBackToSignInFromVerification = () => {
+    setShowVerificationPending(false);
+    setError(null);
+  };
+
+  // Show verification pending screen if needed
+  if (showVerificationPending) {
+    return (
+      <VerificationPending 
+        email={verificationEmail}
+        onBackToSignIn={handleBackToSignInFromVerification}
+      />
+    );
+  }
 
   return (
     <View style={styles.container}>

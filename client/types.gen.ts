@@ -529,6 +529,37 @@ export type AccountProfileResponses = {
 
 export type AccountProfileResponse = AccountProfileResponses[keyof AccountProfileResponses];
 
+export type ResendVerificationData = {
+    body?: never;
+    path?: never;
+    query: {
+        email: string;
+    };
+    url: '/api/access/resend-verification';
+};
+
+export type ResendVerificationErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        status_code: number;
+        detail: string;
+        extra?: null | Array<unknown> | Array<unknown>;
+    };
+};
+
+export type ResendVerificationError = ResendVerificationErrors[keyof ResendVerificationErrors];
+
+export type ResendVerificationResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: Message;
+};
+
+export type ResendVerificationResponse = ResendVerificationResponses[keyof ResendVerificationResponses];
+
 export type AccountRegisterData = {
     body: AccountRegister;
     path?: never;
@@ -557,6 +588,70 @@ export type AccountRegisterResponses = {
 };
 
 export type AccountRegisterResponse = AccountRegisterResponses[keyof AccountRegisterResponses];
+
+export type VerifyEmailGetData = {
+    body?: never;
+    path?: never;
+    query: {
+        token: string;
+    };
+    url: '/api/access/verify-email';
+};
+
+export type VerifyEmailGetErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        status_code: number;
+        detail: string;
+        extra?: null | Array<unknown> | Array<unknown>;
+    };
+};
+
+export type VerifyEmailGetError = VerifyEmailGetErrors[keyof VerifyEmailGetErrors];
+
+export type VerifyEmailGetResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type VerifyEmailGetResponse = VerifyEmailGetResponses[keyof VerifyEmailGetResponses];
+
+export type VerifyEmailData = {
+    body?: never;
+    path?: never;
+    query: {
+        token: string;
+    };
+    url: '/api/access/verify-email';
+};
+
+export type VerifyEmailErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        status_code: number;
+        detail: string;
+        extra?: null | Array<unknown> | Array<unknown>;
+    };
+};
+
+export type VerifyEmailError = VerifyEmailErrors[keyof VerifyEmailErrors];
+
+export type VerifyEmailResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: Message;
+};
+
+export type VerifyEmailResponse = VerifyEmailResponses[keyof VerifyEmailResponses];
 
 export type ListUsersData = {
     body?: never;
