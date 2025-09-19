@@ -1,5 +1,5 @@
 import { NormalAuthError, useSession } from '@/components/ctx';
-import { VerificationPending } from '@/components/EmailVerification';
+import { ResendVerificationButton, VerificationPending } from '@/components/EmailVerification';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { router } from 'expo-router';
 import { AlertTriangle } from 'lucide-react-native';
@@ -12,6 +12,7 @@ export default function Authorization() {
   const [error, setError] = useState<string | null>(null);
   const [showVerificationPending, setShowVerificationPending] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState('');
+  const [showVerificationButton, setShowVerificationButton] = useState(false);
   const { signIn } = useSession();
 
   const handleLogin = async () => {
@@ -21,24 +22,36 @@ export default function Authorization() {
     }
     try {
       const result = await signIn(AccountLoginData);
-      
+
       if (result.success) {
+        setShowVerificationButton(false);
         router.replace('/');
       } else if (result.requiresVerification) {
         // Show verification pending screen for unverified users
         setVerificationEmail(result.email || email);
         setShowVerificationPending(true);
         setError(null);
+        setShowVerificationButton(false);
       } else if (result.error) {
         setError(result.error);
+        setShowVerificationButton(false);
       }
     } catch (error) {
       if (error instanceof NormalAuthError) {
         console.error('Login error:', error.message);
         setError(error.message);
+
+        // Check if error message contains "verified" to show verification button
+        if (error.message.toLowerCase().includes('verified')) {
+          setShowVerificationButton(true);
+          setVerificationEmail(email);
+        } else {
+          setShowVerificationButton(false);
+        }
       } else {
         console.error('Unexpected error during login:', error);
         setError('An unexpected error occurred. Please try again later.');
+        setShowVerificationButton(false);
       }
     }
   };
@@ -50,12 +63,13 @@ export default function Authorization() {
   const handleBackToSignInFromVerification = () => {
     setShowVerificationPending(false);
     setError(null);
+    setShowVerificationButton(false);
   };
 
   // Show verification pending screen if needed
   if (showVerificationPending) {
     return (
-      <VerificationPending 
+      <VerificationPending
         email={verificationEmail}
         onBackToSignIn={handleBackToSignInFromVerification}
       />
@@ -97,6 +111,12 @@ export default function Authorization() {
           </AlertDescription>
         </Alert>
       }
+
+      {showVerificationButton && verificationEmail && (
+        <View style={styles.verificationSection}>
+          <ResendVerificationButton email={verificationEmail} />
+        </View>
+      )}
     </View>
   );
 }
@@ -151,5 +171,10 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontSize: 14,
     textDecorationLine: 'underline',
+  },
+  verificationSection: {
+    marginTop: 20,
+    width: '100%',
+    alignItems: 'center',
   },
 });

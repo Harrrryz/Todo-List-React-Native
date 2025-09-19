@@ -46,7 +46,7 @@ export default function SignUp() {
 
     try {
       const result = await signUp(AccountRegisterData);
-      
+
       if (result.success && result.requiresVerification) {
         // Show verification pending screen
         setVerificationEmail(result.email || email);
@@ -79,7 +79,7 @@ export default function SignUp() {
   // Show verification pending screen if needed
   if (showVerificationPending) {
     return (
-      <VerificationPending 
+      <VerificationPending
         email={verificationEmail}
         onBackToSignIn={handleBackToSignInFromVerification}
       />
