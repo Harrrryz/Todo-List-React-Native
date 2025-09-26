@@ -21,6 +21,7 @@
         "@rn-primitives/tabs": "^1.2.0",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
+        "cross-env": "^10.0.0",
         "dayjs": "^1.11.13",
         "expo": "~53.0.7",
         "expo-blur": "~14.1.4",
@@ -265,6 +266,8 @@
     "@emnapi/runtime": ["@emnapi/runtime@1.4.3", "https://registry.npmmirror.com/@emnapi/runtime/-/runtime-1.4.3.tgz", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-pBPWdu6MLKROBX05wSNKcNb++m5Er+KQ9QkB+WVM+pW2Kx9hoSrVTnu3BdkI5eBLZoKu/J6mW/B6i6bJB2ytXQ=="],
 
     "@emnapi/wasi-threads": ["@emnapi/wasi-threads@1.0.2", "https://registry.npmmirror.com/@emnapi/wasi-threads/-/wasi-threads-1.0.2.tgz", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-5n3nTJblwRi8LlXkJ9eBzu+kZR8Yxcc7ubakyQTFzPMtIhFpUBRbsnc2Dv88IZDIbCDlBiWrknhB4Lsz7mg6BA=="],
+
+    "@epic-web/invariant": ["@epic-web/invariant@1.0.0", "", {}, "sha512-lrTPqgvfFQtR/eY/qkIzp98OGdNJu0m5ji3q/nJI8v3SXkRKEnWiOxMmbvcSoAIzv/cGiuvRy57k4suKQSAdwA=="],
 
     "@eslint-community/eslint-utils": ["@eslint-community/eslint-utils@4.7.0", "https://registry.npmmirror.com/@eslint-community/eslint-utils/-/eslint-utils-4.7.0.tgz", { "dependencies": { "eslint-visitor-keys": "^3.4.3" }, "peerDependencies": { "eslint": "^6.0.0 || ^7.0.0 || >=8.0.0" } }, "sha512-dyybb3AcajC7uha6CvhdVRJqaKyn7w2YKqKyAN37NKYgZT36w+iRb0Dymmc5qEJ549c/S31cMMSFd75bteCpCw=="],
 
@@ -831,6 +834,8 @@
     "core-util-is": ["core-util-is@1.0.3", "https://registry.npmmirror.com/core-util-is/-/core-util-is-1.0.3.tgz", {}, "sha512-ZQBvi1DcpJ4GDqanjucZ2Hj3wEO5pZDS89BWbkcrvdxksJorwUDDZamX9ldFkp9aw2lmBDLgkObEA4DWNJ9FYQ=="],
 
     "cosmiconfig": ["cosmiconfig@5.2.1", "https://registry.npmmirror.com/cosmiconfig/-/cosmiconfig-5.2.1.tgz", { "dependencies": { "import-fresh": "^2.0.0", "is-directory": "^0.3.1", "js-yaml": "^3.13.1", "parse-json": "^4.0.0" } }, "sha512-H65gsXo1SKjf8zmrJ67eJk8aIRKV5ff2D4uKZIBZShbhGSpEmsQOPW/SKMKYhSTrqR7ufy6RP69rPogdaPh/kA=="],
+
+    "cross-env": ["cross-env@10.0.0", "", { "dependencies": { "@epic-web/invariant": "^1.0.0", "cross-spawn": "^7.0.6" }, "bin": { "cross-env": "dist/bin/cross-env.js", "cross-env-shell": "dist/bin/cross-env-shell.js" } }, "sha512-aU8qlEK/nHYtVuN4p7UQgAwVljzMg8hB4YK5ThRqD2l/ziSnryncPNn7bMLt5cFYsKVKBh8HqLqyCoTupEUu7Q=="],
 
     "cross-fetch": ["cross-fetch@3.2.0", "https://registry.npmmirror.com/cross-fetch/-/cross-fetch-3.2.0.tgz", { "dependencies": { "node-fetch": "^2.7.0" } }, "sha512-Q+xVJLoGOeIMXZmbUK4HYk+69cQH6LudR0Vu/pRm2YlU/hDV9CiS0gKUMaWY5f2NeUH9C1nV3bsTlCo0FsTV1Q=="],
 

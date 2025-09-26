@@ -9,6 +9,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "openapi-ts": "openapi-ts",
+    "vercel": "cross-env NODE_ENV=production vercel",
     "lint": "expo lint"
   },
   "dependencies": {
@@ -29,6 +30,7 @@
     "@rn-primitives/tabs": "^1.2.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cross-env": "^10.0.0",
     "dayjs": "^1.11.13",
     "expo": "~53.0.7",
     "expo-blur": "~14.1.4",

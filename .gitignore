@@ -39,3 +39,4 @@ yarn-error.*
 app-example
 
 .vercel
+openapi-ts-error-*.log
