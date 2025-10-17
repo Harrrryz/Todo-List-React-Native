@@ -1,201 +1,105 @@
-import { agentConversation, AgentConversationData, SessionConversationRequest } from '@/client';
-import { useTodoRefresh } from '@/components/TodoRefreshContext';
-import { Input } from '@/components/ui/input';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import React, { useEffect, useRef, useState } from 'react';
+import { useSession } from '@/components/ctx'
+import { Input } from '@/components/ui/input'
+import Ionicons from '@expo/vector-icons/Ionicons'
+import { createParser, type ParsedEvent, type ReconnectInterval } from 'eventsource-parser'
+import React, { useCallback, useState } from 'react'
 import {
-  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+} from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
-interface Message {
-  id: string;
-  text: string;
-  isUser: boolean;
-  timestamp: Date;
-}
+const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8089'
+const STREAM_PATH = '/api/todos/agent-create/stream'
 
 export default function AIChatScreen() {
-  const { triggerRefresh } = useTodoRefresh();
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      text: 'Hello! I\'m your AI assistant. How can I help you today?',
-      isUser: false,
-      timestamp: new Date(),
-    },
-  ]);
-  const [inputText, setInputText] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const scrollViewRef = useRef<ScrollView>(null);
+  const { session } = useSession()
+  const [inputText, setInputText] = useState('')
+  const [isLogging, setIsLogging] = useState(false)
 
-
-  const generateAIResponse = async (userMessage: string): Promise<string> => {
-    try {
-      // Send only the current user message instead of entire conversation history
-      const messagesForAgent = [{
-        role: 'user',
-        content: userMessage
-      }];
-
-      const conversationRequest: SessionConversationRequest = {
-        messages: messagesForAgent,
-        session_id: sessionId,
-        session_name: sessionId ? undefined : 'AI Chat Session',
-      };
-
-      const agentData: AgentConversationData = {
-        body: conversationRequest,
-        url: '/api/agent-sessions/conversation',
-      };
-
-      const response = await agentConversation(agentData);
-
-      if (response.data) {
-        // Update session ID if this is a new session
-        if (!sessionId && response.data.session_id) {
-          setSessionId(response.data.session_id);
-        }
-
-        return response.data.response || 'I received your message but didn\'t get a proper response.';
-      } else {
-        return 'I received your message but didn\'t get a proper response from the AI service.';
-      }
-    } catch (error) {
-      console.error('Error calling agentConversation:', error);
-      // Fallback to a simple response
-      return 'I\'m sorry, I\'m having trouble connecting to the AI service right now. Please try again later.';
+  const logStreamToConsole = useCallback(async () => {
+    if (!session) {
+      Alert.alert('Authentication Required', 'Please sign in to use the AI stream.')
+      return
     }
-  };
 
-  const sendMessage = async () => {
-    if (!inputText.trim() || isLoading) return;
-
-    const cleanText = inputText.trim();
-    const textWithTimezone = cleanText + ' (sent at timezone: ' + Intl.DateTimeFormat().resolvedOptions().timeZone + ')';
-
-    // Create message for display (without timezone info)
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      text: cleanText,
-      isUser: true,
-      timestamp: new Date(),
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setInputText('');
-    setIsLoading(true);
-
-    try {
-      // Send the message with timezone info to the AI
-      const aiResponse = await generateAIResponse(textWithTimezone);
-
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: aiResponse,
-        isUser: false,
-        timestamp: new Date(),
-      };
-
-      setMessages(prev => [...prev, aiMessage]);
-
-      // Always trigger todo refresh after AI response
-      console.log('AI Chat: Triggering todo refresh after AI response');
-      triggerRefresh();
-    } catch (error) {
-      console.error('Error generating AI response:', error);
-      Alert.alert('Error', 'Failed to get AI response. Please try again.');
-    } finally {
-      setIsLoading(false);
+    const cleanText = inputText.trim()
+    if (!cleanText) {
+      Alert.alert('Missing Message', 'Enter a message before starting the stream.')
+      return
     }
-  };
 
-  // Direct clear function for testing
-  const directClearChat = () => {
-    console.log('Direct clear chat pressed');
-    setMessages([{
-      id: '1',
-      text: 'Hello! I\'m your AI assistant. How can I help you today?',
-      isUser: false,
-      timestamp: new Date(),
-    }]);
-    setSessionId(null);
-    console.log('Direct clear completed');
-  };
-
-  const clearChat = () => {
-    console.log('Clear chat button pressed'); // Debug log
-
-    Alert.alert(
-      'Clear Chat',
-      'Are you sure you want to clear all messages?',
-      [
+    const requestBody = {
+      messages: [
         {
-          text: 'Cancel',
-          style: 'cancel',
-          onPress: () => console.log('Clear chat cancelled')
-        },
-        {
-          text: 'Clear',
-          style: 'destructive',
-          onPress: () => {
-            console.log('Clearing chat messages'); // Debug log
-            setMessages([{
-              id: '1',
-              text: 'Hello! I\'m your AI assistant. How can I help you today?',
-              isUser: false,
-              timestamp: new Date(),
-            }]);
-            setSessionId(null); // Reset session ID for a new conversation
-            console.log('Chat cleared successfully'); // Debug log
-          },
+          role: 'user',
+          content: cleanText,
         },
       ],
-      { cancelable: true } // Make sure the alert can be dismissed
-    );
-  };
+    }
 
-  useEffect(() => {
-    // Auto-scroll to bottom when new messages are added
-    scrollViewRef.current?.scrollToEnd({ animated: true });
-  }, [messages]);
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session}`,
+    }
 
-  const renderMessage = (message: Message) => (
-    <View
-      key={message.id}
-      style={[
-        styles.messageContainer,
-        message.isUser ? styles.userMessage : styles.aiMessage,
-      ]}
-    >
-      <View style={[
-        styles.messageBubble,
-        message.isUser ? styles.userBubble : styles.aiBubble,
-      ]}>
-        <Text style={[
-          styles.messageText,
-          message.isUser ? styles.userText : styles.aiText,
-        ]}>
-          {message.text}
-        </Text>
-        <Text style={[
-          styles.timestamp,
-          message.isUser ? styles.userTimestamp : styles.aiTimestamp,
-        ]}>
-          {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </Text>
-      </View>
-    </View>
-  );
+    console.log('Starting SSE console log stream...')
+    setIsLogging(true)
+
+    try {
+      const response = await fetch(`${API_BASE}${STREAM_PATH}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Stream log request failed (${response.status})`)
+      }
+
+      const reader = response.body?.getReader()
+
+      if (!reader) {
+        throw new Error('Response body is not readable')
+      }
+
+      const decoder = new TextDecoder()
+      const parser = createParser((event: ParsedEvent | ReconnectInterval) => {
+        if (event.type !== 'event') return
+
+        const data = typeof event.data === 'string' ? event.data.trim() : ''
+        if (!data) return
+        if (data === '[DONE]') {
+          console.log('SSE console log stream finished.')
+          return
+        }
+        console.log('[SSE chunk]', data)
+      })
+
+      while (true) {
+        const { value, done } = await reader.read()
+        if (done) {
+          const finalChunk = decoder.decode()
+          if (finalChunk) parser.feed(finalChunk)
+          break
+        }
+        const textChunk = decoder.decode(value, { stream: true })
+        parser.feed(textChunk)
+      }
+
+      reader.releaseLock()
+    } catch (error) {
+      console.error('Error while logging SSE stream:', error)
+      Alert.alert('Error', 'Failed to stream AI response. Check the console for details.')
+    } finally {
+      setIsLogging(false)
+    }
+  }, [inputText, session])
 
   return (
     <SafeAreaView style={styles.container}>
@@ -204,69 +108,36 @@ export default function AIChatScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
-        {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>AI Assistant</Text>
-          <View style={{ flexDirection: 'row', gap: 10 }}>
-            <TouchableOpacity onPress={directClearChat} style={styles.clearButton}>
-              <Ionicons name="refresh-outline" size={24} color="#007AFF" />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={clearChat} style={styles.clearButton}>
-              <Ionicons name="trash-outline" size={24} color="#FF3B30" />
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.headerTitle}>AI SSE Logger</Text>
+          <TouchableOpacity onPress={logStreamToConsole} style={styles.iconButton} disabled={isLogging}>
+            <Ionicons name="terminal-outline" size={24} color={isLogging ? '#999' : '#34C759'} />
+          </TouchableOpacity>
         </View>
 
-        {/* Messages */}
-        <ScrollView
-          ref={scrollViewRef}
-          style={styles.messagesContainer}
-          contentContainerStyle={styles.messagesContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {messages.map(renderMessage)}
-          {isLoading && (
-            <View style={[styles.messageContainer, styles.aiMessage]}>
-              <View style={[styles.messageBubble, styles.aiBubble]}>
-                <ActivityIndicator size="small" color="#007AFF" />
-                <Text style={styles.loadingText}>AI is typing...</Text>
-              </View>
-            </View>
-          )}
-        </ScrollView>
-
-        {/* Input area */}
         <View style={styles.inputContainer}>
           <Input
             style={styles.textInput}
             placeholder="Type your message..."
             value={inputText}
             onChangeText={setInputText}
-            onSubmitEditing={sendMessage}
             multiline
             maxLength={500}
-            editable={!isLoading}
+            editable={!isLogging}
             blurOnSubmit={false}
             returnKeyType="send"
           />
           <TouchableOpacity
-            onPress={sendMessage}
-            style={[
-              styles.sendButton,
-              (!inputText.trim() || isLoading) && styles.sendButtonDisabled,
-            ]}
-            disabled={!inputText.trim() || isLoading}
+            onPress={logStreamToConsole}
+            style={[styles.sendButton, (!inputText.trim() || isLogging) && styles.sendButtonDisabled]}
+            disabled={!inputText.trim() || isLogging}
           >
-            <Ionicons
-              name="send"
-              size={20}
-              color={(!inputText.trim() || isLoading) ? '#999' : '#FFF'}
-            />
+            <Ionicons name="send" size={20} color={!inputText.trim() || isLogging ? '#999' : '#FFF'} />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -289,68 +160,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
   },
-  clearButton: {
+  iconButton: {
     padding: 5,
-  },
-  messagesContainer: {
-    flex: 1,
-  },
-  messagesContent: {
-    padding: 20,
-    paddingBottom: 10,
-  },
-  messageContainer: {
-    marginBottom: 15,
-  },
-  userMessage: {
-    alignItems: 'flex-end',
-  },
-  aiMessage: {
-    alignItems: 'flex-start',
-  },
-  messageBubble: {
-    maxWidth: '80%',
-    padding: 12,
-    borderRadius: 20,
-  },
-  userBubble: {
-    backgroundColor: '#007AFF',
-    borderBottomRightRadius: 5,
-  },
-  aiBubble: {
-    backgroundColor: '#FFF',
-    borderBottomLeftRadius: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  messageText: {
-    fontSize: 16,
-    lineHeight: 22,
-  },
-  userText: {
-    color: '#FFF',
-  },
-  aiText: {
-    color: '#333',
-  },
-  timestamp: {
-    fontSize: 12,
-    marginTop: 5,
-  },
-  userTimestamp: {
-    color: 'rgba(255, 255, 255, 0.7)',
-    textAlign: 'right',
-  },
-  aiTimestamp: {
-    color: '#999',
-  },
-  loadingText: {
-    color: '#666',
-    fontStyle: 'italic',
-    marginLeft: 10,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -380,4 +191,4 @@ const styles = StyleSheet.create({
   sendButtonDisabled: {
     backgroundColor: '#DDD',
   },
-});
+})
