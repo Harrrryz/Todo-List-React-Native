@@ -1,9 +1,9 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 
+import { TodoRefreshProvider } from '@/components/TodoRefreshContext';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { TodoRefreshProvider } from '@/components/TodoRefreshContext';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
@@ -35,6 +35,13 @@ export default function TabLayout() {
           options={{
             title: 'AI Chat',
             tabBarIcon: ({ color }) => <Ionicons name="chatbubble-ellipses" size={24} color={Colors[colorScheme ?? 'light'].tint} />,
+          }}
+        />
+        <Tabs.Screen
+          name="chat-stream-test"
+          options={{
+            title: 'Stream Test',
+            tabBarIcon: ({ color }) => <Ionicons name="code-slash" size={24} color={Colors[colorScheme ?? 'light'].tint} />,
           }}
         />
         <Tabs.Screen

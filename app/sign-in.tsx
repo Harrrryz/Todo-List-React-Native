@@ -13,7 +13,35 @@ export default function Authorization() {
   const [showVerificationPending, setShowVerificationPending] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState('');
   const [showVerificationButton, setShowVerificationButton] = useState(false);
-  const { signIn } = useSession();
+  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
+  const [forgotPasswordMessage, setForgotPasswordMessage] = useState<string | null>(null);
+  const { signIn, forgotPassword } = useSession();
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setError('Please enter your email address first');
+      return;
+    }
+
+    setForgotPasswordLoading(true);
+    setError(null);
+    setForgotPasswordMessage(null);
+
+    try {
+      const result = await forgotPassword(email);
+      
+      if (result.success) {
+        setForgotPasswordMessage(result.message);
+      } else {
+        setError(result.message);
+      }
+    } catch (error) {
+      console.error('Forgot password error:', error);
+      setError('An unexpected error occurred. Please try again later.');
+    } finally {
+      setForgotPasswordLoading(false);
+    }
+  };
 
   const handleLogin = async () => {
     const AccountLoginData = {
@@ -99,9 +127,28 @@ export default function Authorization() {
         <Text style={styles.buttonText}>Sign In</Text>
       </TouchableOpacity>
 
+      <TouchableOpacity 
+        style={[styles.linkButton, { marginBottom: 5 }]} 
+        onPress={handleForgotPassword}
+        disabled={forgotPasswordLoading}
+      >
+        <Text style={[styles.linkText, forgotPasswordLoading && { opacity: 0.5 }]}>
+          {forgotPasswordLoading ? 'Sending...' : 'Forgot Password?'}
+        </Text>
+      </TouchableOpacity>
+
       <TouchableOpacity style={styles.linkButton} onPress={handleGoToSignUp}>
         <Text style={styles.linkText}>Don&apos;t have an account? Sign Up</Text>
       </TouchableOpacity>
+
+      {forgotPasswordMessage && (
+        <Alert icon={AlertTriangle} variant='default' className='max-w-xl mt-3'>
+          <AlertTitle>Success!</AlertTitle>
+          <AlertDescription>
+            {forgotPasswordMessage}
+          </AlertDescription>
+        </Alert>
+      )}
 
       {error &&
         <Alert icon={AlertTriangle} variant='destructive' className='max-w-xl mt-3'>

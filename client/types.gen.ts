@@ -130,6 +130,13 @@ export type AgentTodoResponse = {
 };
 
 /**
+ * ForgotPasswordRequest
+ */
+export type ForgotPasswordRequest = {
+    email: string;
+};
+
+/**
  * Importance
  * Importance levels for todo items.
  */
@@ -197,6 +204,14 @@ export type RateLimitErrorResponse = {
      * Requests remaining this month
      */
     remaining_quota: number;
+};
+
+/**
+ * ResetPasswordRequest
+ */
+export type ResetPasswordRequest = {
+    token: string;
+    newpassword: string;
 };
 
 /**
@@ -466,6 +481,35 @@ export type SystemHealthResponses = {
 
 export type SystemHealthResponse = SystemHealthResponses[keyof SystemHealthResponses];
 
+export type ForgotPasswordData = {
+    body: ForgotPasswordRequest;
+    path?: never;
+    query?: never;
+    url: '/api/access/forgot-password';
+};
+
+export type ForgotPasswordErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        status_code: number;
+        detail: string;
+        extra?: null | Array<unknown> | Array<unknown>;
+    };
+};
+
+export type ForgotPasswordError = ForgotPasswordErrors[keyof ForgotPasswordErrors];
+
+export type ForgotPasswordResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: Message;
+};
+
+export type ForgotPasswordResponse = ForgotPasswordResponses[keyof ForgotPasswordResponses];
+
 export type AccountLoginData = {
     body: AccountLogin;
     path?: never;
@@ -559,6 +603,35 @@ export type ResendVerificationResponses = {
 };
 
 export type ResendVerificationResponse = ResendVerificationResponses[keyof ResendVerificationResponses];
+
+export type ResetPasswordData = {
+    body: ResetPasswordRequest;
+    path?: never;
+    query?: never;
+    url: '/api/access/reset-password';
+};
+
+export type ResetPasswordErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        status_code: number;
+        detail: string;
+        extra?: null | Array<unknown> | Array<unknown>;
+    };
+};
+
+export type ResetPasswordError = ResetPasswordErrors[keyof ResetPasswordErrors];
+
+export type ResetPasswordResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: Message;
+};
+
+export type ResetPasswordResponse = ResetPasswordResponses[keyof ResetPasswordResponses];
 
 export type AccountRegisterData = {
     body: AccountRegister;
@@ -1284,6 +1357,35 @@ export type AgentCreateTodoResponses = {
 };
 
 export type AgentCreateTodoResponse = AgentCreateTodoResponses[keyof AgentCreateTodoResponses];
+
+export type AgentCreateTodoStreamData = {
+    body: AgentTodoRequest;
+    path?: never;
+    query?: never;
+    url: '/api/todos/agent-create/stream';
+};
+
+export type AgentCreateTodoStreamErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        status_code: number;
+        detail: string;
+        extra?: null | Array<unknown> | Array<unknown>;
+    };
+};
+
+export type AgentCreateTodoStreamError = AgentCreateTodoStreamErrors[keyof AgentCreateTodoStreamErrors];
+
+export type AgentCreateTodoStreamResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: string;
+};
+
+export type AgentCreateTodoStreamResponse = AgentCreateTodoStreamResponses[keyof AgentCreateTodoStreamResponses];
 
 export type ClearSessionHistoryData = {
     body?: never;

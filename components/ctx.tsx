@@ -1,4 +1,4 @@
-import { accountLogin, AccountLogin, accountProfile, accountRegister, AccountRegister, resendVerification, User, verifyEmail } from '@/client';
+import { accountLogin, AccountLogin, accountProfile, accountRegister, AccountRegister, forgotPassword, ForgotPasswordRequest, resetPassword, ResetPasswordRequest, resendVerification, User, verifyEmail } from '@/client';
 import { useStorageState } from '@/hooks/useStorageState';
 import { useRouter } from 'expo-router';
 import { createContext, use, type PropsWithChildren } from 'react';
@@ -23,6 +23,8 @@ const AuthContext = createContext<{
   signOut: () => void;
   resendVerificationEmail: (email: string) => Promise<{ success: boolean; message: string }>;
   verifyUserEmail: (token: string) => Promise<{ success: boolean; message: string }>;
+  forgotPassword: (email: string) => Promise<{ success: boolean; message: string }>;
+  resetPassword: (token: string, newPassword: string) => Promise<{ success: boolean; message: string }>;
   getCurrentUser: () => Promise<User | null>;
   session?: string | null;
   isLoading: boolean;
@@ -32,6 +34,8 @@ const AuthContext = createContext<{
   signOut: () => null,
   resendVerificationEmail: () => Promise.resolve({ success: false, message: '' }),
   verifyUserEmail: () => Promise.resolve({ success: false, message: '' }),
+  forgotPassword: () => Promise.resolve({ success: false, message: '' }),
+  resetPassword: () => Promise.resolve({ success: false, message: '' }),
   getCurrentUser: () => Promise.resolve(null),
   session: null,
   isLoading: false,
@@ -272,6 +276,79 @@ export function SessionProvider({ children }: PropsWithChildren) {
     }
   };
 
+  const forgotPasswordHandler = async (email: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      if (!email || !email.includes('@')) {
+        return {
+          success: false,
+          message: 'Please enter a valid email address.'
+        };
+      }
+
+      const response = await forgotPassword({
+        body: { email },
+      });
+
+      if (response.data) {
+        return {
+          success: true,
+          message: 'Password reset email sent! Please check your inbox for further instructions.'
+        };
+      } else {
+        return {
+          success: false,
+          message: 'Failed to send password reset email. Please try again.'
+        };
+      }
+    } catch (error) {
+      console.error('Forgot password error:', error);
+      return {
+        success: false,
+        message: 'Failed to send password reset email. Please try again.'
+      };
+    }
+  };
+
+  const resetPasswordHandler = async (token: string, newPassword: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      if (!token || !newPassword) {
+        return {
+          success: false,
+          message: 'Token and new password are required.'
+        };
+      }
+
+      if (newPassword.length < 6) {
+        return {
+          success: false,
+          message: 'Password must be at least 6 characters long.'
+        };
+      }
+
+      const response = await resetPassword({
+        body: { token, newpassword: newPassword },
+      });
+
+      if (response.data) {
+        return {
+          success: true,
+          message: 'Password reset successfully! You can now log in with your new password.'
+        };
+      } else {
+        return {
+          success: false,
+          message: 'Failed to reset password. The token may be invalid or expired.'
+        };
+      }
+    } catch (error) {
+      console.error('Reset password error:', error);
+      return {
+        success: false,
+        message: 'Failed to reset password. The token may be invalid or expired.'
+      };
+    }
+  };
+
   return (
     <AuthContext
       value={{
@@ -284,6 +361,8 @@ export function SessionProvider({ children }: PropsWithChildren) {
         },
         resendVerificationEmail,
         verifyUserEmail,
+        forgotPassword: forgotPasswordHandler,
+        resetPassword: resetPasswordHandler,
         getCurrentUser,
         session,
         isLoading,
