@@ -2,25 +2,35 @@ import { useSession } from '@/components/ctx'
 import { Input } from '@/components/ui/input'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import { createParser, type ParsedEvent, type ReconnectInterval } from 'eventsource-parser'
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useRef, useState } from 'react'
 import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native'
+import Markdown from 'react-native-markdown-display'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8089'
 const STREAM_PATH = '/api/todos/agent-create/stream'
 
+interface Message {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+}
+
 export default function AIChatScreen() {
   const { session } = useSession()
   const [inputText, setInputText] = useState('')
   const [isLogging, setIsLogging] = useState(false)
+  const [messages, setMessages] = useState<Message[]>([])
+  const scrollViewRef = useRef<ScrollView>(null)
 
   const logStreamToConsole = useCallback(async () => {
     if (!session) {
@@ -48,8 +58,26 @@ export default function AIChatScreen() {
       Authorization: `Bearer ${session}`,
     }
 
-    console.log('Starting SSE console log stream...')
+    console.log('Starting SSE stream...')
     setIsLogging(true)
+
+    // Add user message to history
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: cleanText,
+    }
+    setMessages(prev => [...prev, userMessage])
+    setInputText('')
+
+    // Prepare assistant message placeholder
+    const assistantMessageId = `${Date.now()}-assistant`
+    const assistantMessage: Message = {
+      id: assistantMessageId,
+      role: 'assistant',
+      content: '',
+    }
+    setMessages(prev => [...prev, assistantMessage])
 
     try {
       const response = await fetch(`${API_BASE}${STREAM_PATH}`, {
@@ -59,7 +87,7 @@ export default function AIChatScreen() {
       })
 
       if (!response.ok) {
-        throw new Error(`Stream log request failed (${response.status})`)
+        throw new Error(`Stream request failed (${response.status})`)
       }
 
       const reader = response.body?.getReader()
@@ -69,16 +97,44 @@ export default function AIChatScreen() {
       }
 
       const decoder = new TextDecoder()
+      let accumulatedContent = ''
+
       const parser = createParser((event: ParsedEvent | ReconnectInterval) => {
         if (event.type !== 'event') return
 
         const data = typeof event.data === 'string' ? event.data.trim() : ''
         if (!data) return
         if (data === '[DONE]') {
-          console.log('SSE console log stream finished.')
+          console.log('SSE stream finished.')
           return
         }
-        console.log('[SSE chunk]', data)
+
+        try {
+          const parsed = JSON.parse(data)
+
+          // Extract content from various response formats
+          if (parsed.content && typeof parsed.content === 'string') {
+            accumulatedContent += parsed.content
+            // Update the assistant message in the history
+            setMessages(prev =>
+              prev.map(msg =>
+                msg.id === assistantMessageId ? { ...msg, content: accumulatedContent } : msg
+              )
+            )
+          } else if (parsed.output && typeof parsed.output === 'string') {
+            accumulatedContent += '\n' + parsed.output
+            setMessages(prev =>
+              prev.map(msg =>
+                msg.id === assistantMessageId ? { ...msg, content: accumulatedContent } : msg
+              )
+            )
+          }
+
+          console.log('[SSE chunk]', data)
+        } catch {
+          // If not valid JSON, just log it
+          console.log('[SSE chunk]', data)
+        }
       })
 
       while (true) {
@@ -94,8 +150,10 @@ export default function AIChatScreen() {
 
       reader.releaseLock()
     } catch (error) {
-      console.error('Error while logging SSE stream:', error)
+      console.error('Error while streaming:', error)
       Alert.alert('Error', 'Failed to stream AI response. Check the console for details.')
+      // Remove the empty assistant message on error
+      setMessages(prev => prev.filter(msg => msg.id !== assistantMessageId))
     } finally {
       setIsLogging(false)
     }
@@ -109,11 +167,51 @@ export default function AIChatScreen() {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>AI SSE Logger</Text>
-          <TouchableOpacity onPress={logStreamToConsole} style={styles.iconButton} disabled={isLogging}>
-            <Ionicons name="terminal-outline" size={24} color={isLogging ? '#999' : '#34C759'} />
+          <Text style={styles.headerTitle}>AI Chat</Text>
+          <TouchableOpacity
+            onPress={() => setMessages([])}
+            style={styles.iconButton}
+            disabled={isLogging}
+          >
+            <Ionicons name="trash-outline" size={24} color={isLogging ? '#999' : '#FF3B30'} />
           </TouchableOpacity>
         </View>
+
+        {/* Messages Display */}
+        <ScrollView
+          ref={scrollViewRef}
+          style={styles.contentContainer}
+          contentContainerStyle={styles.contentInner}
+          onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+        >
+          {messages.length > 0 ? (
+            messages.map(message => (
+              <View
+                key={message.id}
+                style={[
+                  styles.messageContainer,
+                  message.role === 'user' ? styles.userMessageContainer : styles.assistantMessageContainer,
+                ]}
+              >
+                <View
+                  style={[
+                    styles.messageBubble,
+                    message.role === 'user' ? styles.userBubble : styles.assistantBubble,
+                  ]}
+                >
+                  <Markdown>
+                    {message.content}
+                  </Markdown>
+                </View>
+              </View>
+            ))
+          ) : (
+            <View style={styles.emptyState}>
+              <Ionicons name="chatbubbles-outline" size={64} color="#CCC" />
+              <Text style={styles.emptyText}>Send a message to start chatting</Text>
+            </View>
+          )}
+        </ScrollView>
 
         <View style={styles.inputContainer}>
           <Input
@@ -132,7 +230,11 @@ export default function AIChatScreen() {
             style={[styles.sendButton, (!inputText.trim() || isLogging) && styles.sendButtonDisabled]}
             disabled={!inputText.trim() || isLogging}
           >
-            <Ionicons name="send" size={20} color={!inputText.trim() || isLogging ? '#999' : '#FFF'} />
+            {isLogging ? (
+              <Ionicons name="stop-circle" size={20} color="#FFF" />
+            ) : (
+              <Ionicons name="send" size={20} color={!inputText.trim() ? '#999' : '#FFF'} />
+            )}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -162,6 +264,61 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     padding: 5,
+  },
+  contentContainer: {
+    flex: 1,
+  },
+  contentInner: {
+    padding: 20,
+    flexGrow: 1,
+  },
+  messageContainer: {
+    marginBottom: 15,
+  },
+  userMessageContainer: {
+    alignItems: 'flex-end',
+  },
+  assistantMessageContainer: {
+    alignItems: 'flex-start',
+  },
+  messageBubble: {
+    maxWidth: '80%',
+    borderRadius: 16,
+    padding: 12,
+  },
+  userBubble: {
+    backgroundColor: '#007AFF',
+    borderBottomRightRadius: 4,
+  },
+  assistantBubble: {
+    backgroundColor: '#FFF',
+    borderBottomLeftRadius: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  messageText: {
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  userText: {
+    color: '#FFF',
+  },
+  assistantText: {
+    color: '#333',
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#999',
+    marginTop: 16,
   },
   inputContainer: {
     flexDirection: 'row',

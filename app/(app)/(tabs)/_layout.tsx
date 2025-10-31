@@ -38,13 +38,6 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="chat-stream-test"
-          options={{
-            title: 'Stream Test',
-            tabBarIcon: ({ color }) => <Ionicons name="code-slash" size={24} color={Colors[colorScheme ?? 'light'].tint} />,
-          }}
-        />
-        <Tabs.Screen
           name="account"
           options={{
             title: 'Account',
