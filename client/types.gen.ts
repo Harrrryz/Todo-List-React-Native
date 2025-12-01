@@ -107,6 +107,10 @@ export type AgentTodoRequest = {
      * Optional human-readable session name
      */
     sessionname?: string | null;
+    /**
+     * Optional agent name to route the request (defaults to TodoAssistant)
+     */
+    agentname?: string | null;
 };
 
 /**

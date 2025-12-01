@@ -6,6 +6,7 @@ import React, { useCallback, useRef, useState } from 'react'
 import {
   Alert,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -25,11 +26,54 @@ interface Message {
   content: string
 }
 
+interface Agent {
+  id: string
+  name: string
+  description: string
+  icon: keyof typeof Ionicons.glyphMap
+}
+
+const AVAILABLE_AGENTS: Agent[] = [
+  {
+    id: 'TodoAssistant',
+    name: 'Todo Assistant',
+    description: 'General todo management assistant',
+    icon: 'checkbox-outline',
+  },
+  {
+    id: 'TodoCrudAssistant',
+    name: 'Todo CRUD Assistant',
+    description: 'Create, read, update, and delete todos',
+    icon: 'create-outline',
+  },
+  {
+    id: 'TodoScheduleAssistant',
+    name: 'Todo Schedule Assistant',
+    description: 'Help with scheduling and organizing todos',
+    icon: 'calendar-outline',
+  },
+  {
+    id: 'TodoSupportAssistant',
+    name: 'Todo Support Assistant',
+    description: 'Get help and support with your todos',
+    icon: 'help-circle-outline',
+  },
+  {
+    id: 'TodoOrchestratorAgent',
+    name: 'Todo Orchestrator',
+    description: 'Coordinates multiple agents for complex tasks',
+    icon: 'git-network-outline',
+  },
+]
+
 export default function AIChatScreen() {
   const { session } = useSession()
   const [inputText, setInputText] = useState('')
   const [isLogging, setIsLogging] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
+  const [selectedAgent, setSelectedAgent] = useState<Agent>(AVAILABLE_AGENTS[0])
+  const [showAgentSelector, setShowAgentSelector] = useState(false)
+  const [sessionId, setSessionId] = useState<string | null>(null)
   const scrollViewRef = useRef<ScrollView>(null)
 
   const logStreamToConsole = useCallback(async () => {
@@ -44,13 +88,23 @@ export default function AIChatScreen() {
       return
     }
 
-    const requestBody = {
+    const requestBody: {
+      messages: { role: string; content: string }[]
+      agentname: string
+      session_id?: string
+    } = {
       messages: [
         {
           role: 'user',
           content: cleanText,
         },
       ],
+      agentname: selectedAgent.id,
+    }
+
+    // Include session_id if we have one from a previous response
+    if (sessionId) {
+      requestBody.session_id = sessionId
     }
 
     const headers: Record<string, string> = {
@@ -112,6 +166,11 @@ export default function AIChatScreen() {
         try {
           const parsed = JSON.parse(data)
 
+          // Extract session_id from response if present (first message of a new session)
+          if (parsed.session_id && typeof parsed.session_id === 'string') {
+            setSessionId(parsed.session_id)
+          }
+
           // Extract content from various response formats
           if (parsed.content && typeof parsed.content === 'string') {
             accumulatedContent += parsed.content
@@ -157,7 +216,7 @@ export default function AIChatScreen() {
     } finally {
       setIsLogging(false)
     }
-  }, [inputText, session])
+  }, [inputText, session, selectedAgent.id, sessionId])
 
   return (
     <SafeAreaView style={styles.container}>
@@ -167,15 +226,85 @@ export default function AIChatScreen() {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>AI Chat</Text>
+          <View style={styles.headerLeft}>
+            <Text style={styles.headerTitle}>AI Chat</Text>
+            <TouchableOpacity
+              onPress={() => setShowAgentSelector(true)}
+              style={styles.agentSelector}
+              disabled={isLogging}
+            >
+              <Ionicons name={selectedAgent.icon} size={16} color="#007AFF" />
+              <Text style={styles.agentSelectorText}>{selectedAgent.name}</Text>
+              <Ionicons name="chevron-down" size={14} color="#007AFF" />
+            </TouchableOpacity>
+          </View>
           <TouchableOpacity
-            onPress={() => setMessages([])}
+            onPress={() => {
+              setMessages([])
+              setSessionId(null)
+            }}
             style={styles.iconButton}
             disabled={isLogging}
           >
             <Ionicons name="trash-outline" size={24} color={isLogging ? '#999' : '#FF3B30'} />
           </TouchableOpacity>
         </View>
+
+        {/* Agent Selector Modal */}
+        <Modal
+          visible={showAgentSelector}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowAgentSelector(false)}
+        >
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setShowAgentSelector(false)}
+          >
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Select Agent</Text>
+              {AVAILABLE_AGENTS.map(agent => (
+                <TouchableOpacity
+                  key={agent.id}
+                  style={[
+                    styles.agentOption,
+                    selectedAgent.id === agent.id && styles.agentOptionSelected,
+                  ]}
+                  onPress={() => {
+                    setSelectedAgent(agent)
+                    setShowAgentSelector(false)
+                  }}
+                >
+                  <View style={styles.agentOptionLeft}>
+                    <View style={[
+                      styles.agentIconContainer,
+                      selectedAgent.id === agent.id && styles.agentIconContainerSelected,
+                    ]}>
+                      <Ionicons
+                        name={agent.icon}
+                        size={20}
+                        color={selectedAgent.id === agent.id ? '#FFF' : '#007AFF'}
+                      />
+                    </View>
+                    <View style={styles.agentInfo}>
+                      <Text style={[
+                        styles.agentOptionName,
+                        selectedAgent.id === agent.id && styles.agentOptionNameSelected,
+                      ]}>
+                        {agent.name}
+                      </Text>
+                      <Text style={styles.agentOptionDescription}>{agent.description}</Text>
+                    </View>
+                  </View>
+                  {selectedAgent.id === agent.id && (
+                    <Ionicons name="checkmark-circle" size={24} color="#007AFF" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </TouchableOpacity>
+        </Modal>
 
         {/* Messages Display */}
         <ScrollView
@@ -347,5 +476,92 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: '#DDD',
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  agentSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    backgroundColor: '#F0F8FF',
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+  },
+  agentSelectorText: {
+    fontSize: 12,
+    color: '#007AFF',
+    marginHorizontal: 4,
+    fontWeight: '500',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    padding: 20,
+    width: '100%',
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  agentOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 8,
+    backgroundColor: '#F8F8F8',
+  },
+  agentOptionSelected: {
+    backgroundColor: '#F0F8FF',
+    borderWidth: 1,
+    borderColor: '#007AFF',
+  },
+  agentOptionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  agentIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#E8F4FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  agentIconContainerSelected: {
+    backgroundColor: '#007AFF',
+  },
+  agentInfo: {
+    flex: 1,
+  },
+  agentOptionName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  agentOptionNameSelected: {
+    color: '#007AFF',
+  },
+  agentOptionDescription: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
   },
 })
