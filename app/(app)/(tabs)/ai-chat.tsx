@@ -14,6 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
+import * as RNLocalize from 'react-native-localize'
 import Markdown from 'react-native-markdown-display'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -88,6 +89,7 @@ export default function AIChatScreen() {
       return
     }
 
+    const userTimezone = RNLocalize.getTimeZone()
     const requestBody: {
       messages: { role: string; content: string }[]
       agentname: string
@@ -96,7 +98,7 @@ export default function AIChatScreen() {
       messages: [
         {
           role: 'user',
-          content: cleanText,
+          content: `[Timezone: ${userTimezone}] ${cleanText}`,
         },
       ],
       agentname: selectedAgent.id,
