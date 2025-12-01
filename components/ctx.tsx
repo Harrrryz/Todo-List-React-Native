@@ -1,7 +1,8 @@
-import { accountLogin, AccountLogin, accountProfile, accountRegister, AccountRegister, forgotPassword, ForgotPasswordRequest, resetPassword, ResetPasswordRequest, resendVerification, User, verifyEmail } from '@/client';
+import { accountLogin, AccountLogin, accountProfile, accountRegister, AccountRegister, forgotPassword, resendVerification, resetPassword, User, verifyEmail } from '@/client';
 import { useStorageState } from '@/hooks/useStorageState';
+import { authEvents } from '@/lib/auth';
 import { useRouter } from 'expo-router';
-import { createContext, use, type PropsWithChildren } from 'react';
+import { createContext, use, useEffect, type PropsWithChildren } from 'react';
 
 interface SignUpResult {
   success: boolean;
@@ -80,6 +81,19 @@ export function useSession() {
 export function SessionProvider({ children }: PropsWithChildren) {
   const [[isLoading, session], setSession] = useStorageState('session');
   const router = useRouter();
+
+  // Listen for token expired events and sign out
+  useEffect(() => {
+    const unsubscribe = authEvents.subscribe(() => {
+      console.log('Token expired event received, signing out');
+      setSession(null);
+      router.replace('/sign-in');
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [setSession, router]);
 
   const signIn = async (data: AccountLogin): Promise<SignInResult> => {
     // if data.username is not email, throw error

@@ -1,6 +1,7 @@
 import { client } from '@/client/client.gen';
 import { SessionProvider } from '@/components/ctx';
 import "@/global.css";
+import { authEvents, isTokenExpired } from '@/lib/auth';
 import { DarkTheme, DefaultTheme, Theme, ThemeProvider } from '@react-navigation/native';
 import { PortalHost } from '@rn-primitives/portal';
 import { useFonts } from 'expo-font';
@@ -36,6 +37,80 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
+  // Setup getToken function
+  const getToken = React.useCallback(() => {
+    let token = '';
+    if (Platform.OS === "web") {
+      try {
+        token = localStorage.getItem("session") || '';
+      } catch (e) {
+        console.error("Local storage is unavailable:", e);
+        return '';
+      }
+    } else {
+      token = SecureStore.getItem("session") || '';
+    }
+
+    // Check if token is expired before returning
+    if (token && isTokenExpired(token)) {
+      console.log('Token expired, triggering sign out');
+      // Clear the stored token and emit event
+      if (Platform.OS === "web") {
+        try {
+          localStorage.removeItem("session");
+        } catch (e) {
+          console.error("Local storage is unavailable:", e);
+        }
+      } else {
+        SecureStore.deleteItemAsync("session");
+      }
+      // Emit token expired event to trigger sign out in SessionProvider
+      authEvents.emitTokenExpired();
+      return '';
+    }
+
+    return token;
+  }, []);
+
+  // Configure API client
+  React.useEffect(() => {
+    client.setConfig({
+      auth: () => getToken(),
+      baseURL: process.env.EXPO_PUBLIC_API_BASE_URL || "https://putian-ai-backend-litestar.onrender.com",
+    });
+  }, [getToken]);
+
+  // Add response interceptor to handle 401 errors
+  React.useEffect(() => {
+    const interceptorId = client.instance.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        // Check if the error is a 401 Unauthorized
+        if (error.response?.status === 401) {
+          console.log('Received 401 Unauthorized, triggering sign out');
+          // Clear the stored token
+          if (Platform.OS === "web") {
+            try {
+              localStorage.removeItem("session");
+            } catch (e) {
+              console.error("Local storage is unavailable:", e);
+            }
+          } else {
+            SecureStore.deleteItemAsync("session");
+          }
+          // Emit token expired event to trigger sign out
+          authEvents.emitTokenExpired();
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    // Cleanup interceptor on unmount
+    return () => {
+      client.instance.interceptors.response.eject(interceptorId);
+    };
+  }, []);
+
   useIsomorphicLayoutEffect(() => {
     if (hasMounted.current) {
       return;
@@ -53,29 +128,10 @@ export default function RootLayout() {
     return null;
   }
 
-
-
   if (!loaded) {
     // Async font loading only occurs in development.
     return null;
   }
-
-  const getToken = () => {
-    if (Platform.OS === "web") {
-      try {
-        return localStorage.getItem("session") || '';
-      } catch (e) {
-        console.error("Local storage is unavailable:", e);
-        return '';
-      }
-    }
-    return SecureStore.getItem("session") || '';
-  };
-
-  client.setConfig({
-    auth: () => getToken(),
-    baseURL: process.env.EXPO_PUBLIC_API_BASE_URL || "https://putian-ai-backend-litestar.onrender.com",
-  });
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
