@@ -275,6 +275,8 @@ export default function AIChatScreen() {
                   ]}
                   onPress={() => {
                     setSelectedAgent(agent)
+                    setSessionId(null)
+                    console.log('Selected agent:', agent.name)
                     setShowAgentSelector(false)
                   }}
                 >
