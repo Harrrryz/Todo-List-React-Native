@@ -1,29 +1,56 @@
 // src/components/FilterButtons.tsx
 
 import React from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FilterPeriod, useFilter } from './FilterContext';
 
 const FilterButtons = () => {
-  const handleFilter = (period: string) => {
-    Alert.alert('Filter Action', `Filter by: ${period}`);
+  const { selectedPeriod, setSelectedPeriod } = useFilter();
+
+  const handleFilter = (period: FilterPeriod) => {
+    setSelectedPeriod(period);
+  };
+
+  const getButtonStyle = (period: FilterPeriod) => {
+    return [
+      styles.button,
+      selectedPeriod === period && styles.activeButton
+    ];
+  };
+
+  const getButtonTextStyle = (period: FilterPeriod) => {
+    return [
+      styles.buttonText,
+      selectedPeriod === period && styles.activeButtonText
+    ];
   };
 
   return (
     <View style={styles.container}>
       <TouchableOpacity
-        style={styles.button}
-        onPress={() => handleFilter('1 Day')}>
-        <Text style={styles.buttonText}>1 Day</Text>
+        style={getButtonStyle('active')}
+        onPress={() => handleFilter('active')}>
+        <Text style={getButtonTextStyle('active')}>Active</Text>
       </TouchableOpacity>
       <TouchableOpacity
-        style={styles.button}
-        onPress={() => handleFilter('1 Week')}>
-        <Text style={styles.buttonText}>1 Week</Text>
+        style={getButtonStyle('history')}
+        onPress={() => handleFilter('history')}>
+        <Text style={getButtonTextStyle('history')}>History</Text>
       </TouchableOpacity>
       <TouchableOpacity
-        style={styles.button}
-        onPress={() => handleFilter('1 Month')}>
-        <Text style={styles.buttonText}>1 Month</Text>
+        style={getButtonStyle('1day')}
+        onPress={() => handleFilter('1day')}>
+        <Text style={getButtonTextStyle('1day')}>1 Day</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={getButtonStyle('1week')}
+        onPress={() => handleFilter('1week')}>
+        <Text style={getButtonTextStyle('1week')}>1 Week</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={getButtonStyle('1month')}
+        onPress={() => handleFilter('1month')}>
+        <Text style={getButtonTextStyle('1month')}>1 Month</Text>
       </TouchableOpacity>
     </View>
   );
@@ -40,17 +67,26 @@ const styles = StyleSheet.create({
   },
   button: {
     flex: 1, // Each button takes equal space
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#E8E8E8',
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 8,
-    marginHorizontal: 5,
+    marginHorizontal: 2, // Reduced margin to accommodate 5 buttons
     paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: '#D0D0D0',
+  },
+  activeButton: {
+    backgroundColor: '#4A90E2',
+    borderColor: '#4A90E2',
   },
   buttonText: {
-    color: '#FFFFFF',
+    color: '#666666',
     fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: 11, // Slightly smaller font to fit 5 buttons
+  },
+  activeButtonText: {
+    color: '#FFFFFF',
   },
 });
 

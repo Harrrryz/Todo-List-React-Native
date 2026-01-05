@@ -5,6 +5,9 @@
   },
   "build": {
     "development": {
+      "env": {
+        "APP_ENV": "development"
+      },
       "developmentClient": true,
       "distribution": "internal"
     },
@@ -12,6 +15,9 @@
       "distribution": "internal"
     },
     "production": {
+      "env": {
+        "APP_ENV": "production"
+      },
       "autoIncrement": true
     },
     "ios-simulator": {
@@ -22,6 +28,10 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "ascAppId": "6752839400"
+      }
+    }
   }
 }
